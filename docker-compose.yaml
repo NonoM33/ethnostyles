@@ -43,7 +43,7 @@ services:
       - "traefik.http.routers.api-router.rule=Host(`api-cswcoc08w0c84sgocsswok04.157.180.43.90.sslip.io`) || Host(`api-pwgsgko4og0g48gkkowk8gcw.157.180.43.90.sslip.io`) || Host(`v0gss44sc84osg8k888kws4o.157.180.43.90.sslip.io`)"
       - "traefik.http.routers.api-router.entryPoints=http"
       - "traefik.http.routers.api-router.service=api-backend"
-      - "traefik.http.routers.api-router.priority=100"
+      - "traefik.http.routers.api-router.priority=10000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

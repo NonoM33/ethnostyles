@@ -120,7 +120,7 @@ All responses are JSON with consistent error format:
       timestamp: new Date().toISOString()
     }
   })
-  .post('/debug/migrate', async () => {
+  .get('/debug/run-migrations', async () => {
     try {
       await runMigrations()
       return { success: true, message: 'Migrations completed successfully' }

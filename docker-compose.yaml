@@ -38,8 +38,10 @@ services:
     expose:
       - "3000"
     labels:
-      - "traefik.http.services.api-svc.loadbalancer.server.port=3000"
-      - "traefik.http.routers.http-0-${COOLIFY_RESOURCE_UUID}-api.service=api-svc"
+      - "traefik.http.services.api-backend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.api-router.rule=HostRegexp(`api-{uuid:[a-z0-9]+}.{ip:[0-9.]+}.sslip.io`)"
+      - "traefik.http.routers.api-router.entryPoints=http"
+      - "traefik.http.routers.api-router.service=api-backend"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

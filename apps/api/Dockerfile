@@ -1,5 +1,5 @@
 # Build stage
-FROM oven/bun:1.1.42 AS builder
+FROM oven/bun:1.2 AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ WORKDIR /app/apps/api
 RUN bun build src/index.ts --outdir dist --target bun
 
 # Production stage
-FROM oven/bun:1.1.42-slim
+FROM oven/bun:1.2-slim
 
 WORKDIR /app
 

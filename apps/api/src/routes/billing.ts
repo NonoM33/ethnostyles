@@ -9,11 +9,39 @@ import {
   users,
   campaigns,
   respondents,
+  sessions,
   PLANS,
   type PlanId,
 } from '@etnostyles/db/schema'
 import { eq, and, count, gte, lte } from 'drizzle-orm'
-import { getSession } from '../lib/auth'
+
+/**
+ * Get current user from session token
+ */
+async function getCurrentUser(authHeader: string | undefined) {
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null
+  }
+
+  const token = authHeader.slice(7)
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token))
+    .limit(1)
+
+  if (!session || session.expiresAt < new Date()) {
+    return null
+  }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1)
+
+  return user
+}
 
 const stripe = new Stripe(process.env['STRIPE_SECRET_KEY'] || '', {
   apiVersion: '2025-01-27.acacia',
@@ -82,15 +110,18 @@ async function calculateUsage(tenantId: string) {
 
 export const billingRoutes = new Elysia({ prefix: '/billing' })
   // Get subscription and usage
-  .get('/subscription', async ({ headers }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
+  .get('/subscription', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
 
     const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.tenantId, session.tenantId),
+      where: eq(subscriptions.tenantId, user.tenantId),
     })
 
-    const usage = await calculateUsage(session.tenantId)
+    const usage = await calculateUsage(user.tenantId)
     const plan = PLANS[subscription?.planId || 'free']
 
     return {
@@ -127,12 +158,15 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Get invoices
-  .get('/invoices', async ({ headers }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
+  .get('/invoices', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
 
     const tenantInvoices = await db.query.invoices.findMany({
-      where: eq(invoices.tenantId, session.tenantId),
+      where: eq(invoices.tenantId, user.tenantId),
       orderBy: (invoices, { desc }) => [desc(invoices.createdAt)],
       limit: 24,
     })
@@ -161,12 +195,15 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Get payment methods
-  .get('/payment-methods', async ({ headers }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
+  .get('/payment-methods', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
 
     const methods = await db.query.paymentMethods.findMany({
-      where: eq(paymentMethods.tenantId, session.tenantId),
+      where: eq(paymentMethods.tenantId, user.tenantId),
     })
 
     return {
@@ -191,23 +228,28 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Create checkout session
-  .post('/create-checkout-session', async ({ headers, body }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
-    if (session.role !== 'admin') throw new Error('Admin access required')
+  .post('/create-checkout-session', async ({ headers, body, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
 
     const { planId, seats = 0 } = body as { planId: PlanId; seats?: number }
     const plan = PLANS[planId]
-    if (!plan || planId === 'free') throw new Error('Invalid plan')
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.userId),
-    })
+    if (!plan || planId === 'free') {
+      set.status = 400
+      return { error: 'INVALID_PLAN', message: 'Invalid plan' }
+    }
 
     const customerId = await getOrCreateStripeCustomer(
-      session.tenantId,
-      user?.email || '',
-      user?.name || undefined
+      user.tenantId,
+      user.email,
+      user.name || undefined
     )
 
     // Calculate price based on plan and extra seats
@@ -249,13 +291,13 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
       success_url: `${process.env['WEB_URL']}/billing?success=true`,
       cancel_url: `${process.env['WEB_URL']}/billing?canceled=true`,
       metadata: {
-        tenantId: session.tenantId,
+        tenantId: user.tenantId,
         planId,
         extraSeats: seats.toString(),
       },
       subscription_data: {
         metadata: {
-          tenantId: session.tenantId,
+          tenantId: user.tenantId,
           planId,
           extraSeats: seats.toString(),
         },
@@ -276,13 +318,19 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Create portal session
-  .post('/create-portal-session', async ({ headers }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
-    if (session.role !== 'admin') throw new Error('Admin access required')
+  .post('/create-portal-session', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
 
     const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.tenantId, session.tenantId),
+      where: eq(subscriptions.tenantId, user.tenantId),
     })
 
     if (!subscription?.stripeCustomerId) {
@@ -304,15 +352,21 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Update seats
-  .post('/update-seats', async ({ headers, body }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
-    if (session.role !== 'admin') throw new Error('Admin access required')
+  .post('/update-seats', async ({ headers, body, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
 
     const { seats } = body as { seats: number }
 
     const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.tenantId, session.tenantId),
+      where: eq(subscriptions.tenantId, user.tenantId),
     })
 
     if (!subscription || subscription.planId === 'free') {
@@ -367,15 +421,21 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Cancel subscription
-  .post('/cancel', async ({ headers, body }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
-    if (session.role !== 'admin') throw new Error('Admin access required')
+  .post('/cancel', async ({ headers, body, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
 
     const { cancelAtPeriodEnd = true } = body as { cancelAtPeriodEnd?: boolean }
 
     const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.tenantId, session.tenantId),
+      where: eq(subscriptions.tenantId, user.tenantId),
     })
 
     if (!subscription || subscription.planId === 'free') {
@@ -408,13 +468,19 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   })
 
   // Reactivate subscription
-  .post('/reactivate', async ({ headers }) => {
-    const session = await getSession(headers)
-    if (!session) throw new Error('Unauthorized')
-    if (session.role !== 'admin') throw new Error('Admin access required')
+  .post('/reactivate', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
 
     const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.tenantId, session.tenantId),
+      where: eq(subscriptions.tenantId, user.tenantId),
     })
 
     if (!subscription) {

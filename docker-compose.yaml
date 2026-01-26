@@ -37,6 +37,8 @@ services:
       - API_URL=${API_URL}
     expose:
       - "3000"
+    labels:
+      - "traefik.http.services.api.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

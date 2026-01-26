@@ -16,7 +16,13 @@ import { billingRoutes } from './routes/billing'
 import { mcpRoutes } from './routes/mcp'
 
 // Run migrations on startup
-await runMigrations()
+try {
+  await runMigrations()
+} catch (error) {
+  console.error('Failed to run migrations on startup:', error)
+  // Continue running the app even if migrations fail
+  // This allows the health check to work and lets us debug the issue
+}
 
 const app = new Elysia()
   .use(cors({

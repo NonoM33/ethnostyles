@@ -1,17 +1,18 @@
-// Build timestamp: 2026-01-26T10:45:00Z
+// Build timestamp: 2026-01-26T11:00:00Z
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const MYTHES = [
-  { name: 'Explorateur', color: '#3B82F6', emoji: '🧭', description: 'Aventure et découverte' },
-  { name: 'Gardien', color: '#10B981', emoji: '🛡️', description: 'Protection et stabilité' },
-  { name: 'Créateur', color: '#F59E0B', emoji: '🎨', description: 'Innovation et originalité' },
-  { name: 'Sage', color: '#8B5CF6', emoji: '📚', description: 'Connaissance et sagesse' },
-  { name: 'Héros', color: '#EF4444', emoji: '⚔️', description: 'Courage et défi' },
-  { name: 'Rebelle', color: '#EC4899', emoji: '🔥', description: 'Liberté et transgression' },
-  { name: 'Magicien', color: '#6366F1', emoji: '✨', description: 'Transformation et vision' },
-  { name: 'Innocent', color: '#14B8A6', emoji: '🌟', description: 'Optimisme et confiance' },
+// Les 8 Îles-Cultures françaises (étude Laurent Benarbia, nov 2022)
+const ILES_CULTURES = [
+  { name: 'Incertitudes face à l\'avenir', color: '#6B7280', emoji: '🌫️', description: 'Fragilité et aspiration au bonheur', poids: '19%' },
+  { name: 'Primauté du clan', color: '#EC4899', emoji: '👨‍👩‍👧‍👦', description: 'La famille comme refuge et valeur centrale', poids: '18,4%' },
+  { name: 'Réconciliation homme/nature', color: '#10B981', emoji: '🌿', description: 'Engagement écologique et solidarité', poids: '13,8%' },
+  { name: 'Mythe du contrat social', color: '#8B5CF6', emoji: '⚖️', description: 'Autonomie et valeurs humanistes', poids: '11,4%' },
+  { name: 'Mythe du progrès technique', color: '#3B82F6', emoji: '🔬', description: 'Innovation, science et modernité', poids: '11,1%' },
+  { name: 'Culte de la consommation', color: '#F59E0B', emoji: '💎', description: 'Réussite individuelle et prestige', poids: '10,9%' },
+  { name: 'Quête du plaisir', color: '#EF4444', emoji: '🎉', description: 'Hédonisme et épicurisme', poids: '7,9%' },
+  { name: 'Tradition sacrée', color: '#7C3AED', emoji: '🏛️', description: 'Conservatisme et héritage culturel', poids: '7,6%' },
 ]
 
 // Cas concrets d'utilisation par type de collaborateur
@@ -20,8 +21,8 @@ const USE_CASES = [
     role: 'Manager',
     emoji: '👔',
     problem: 'Vos réunions d\'équipe tournent au dialogue de sourds ?',
-    solution: 'Découvrez pourquoi Sarah (Créatrice) a besoin de brainstormer à voix haute pendant que Marc (Sage) préfère réfléchir seul avant.',
-    action: 'Adaptez votre animation : 10 min de réflexion individuelle, puis partage créatif.',
+    solution: 'Un "Mythe du progrès" veut avancer vite avec des données, tandis qu\'un "Primauté du clan" cherche d\'abord le consensus familial.',
+    action: 'Adaptez votre animation : commencez par créer du lien, puis présentez les faits.',
     result: '+35% d\'idées exploitables en réunion',
     color: 'from-blue-500 to-indigo-600',
   },
@@ -29,8 +30,8 @@ const USE_CASES = [
     role: 'DRH / Recruteur',
     emoji: '🎯',
     problem: 'Vos nouvelles recrues partent avant 1 an ?',
-    solution: 'Identifiez le décalage culturel avant qu\'il soit trop tard. Un Explorateur dans une équipe de Gardiens va s\'ennuyer.',
-    action: 'Créez des onboardings personnalisés selon le profil de chaque nouvel arrivant.',
+    solution: 'Un "Quête du plaisir" dans une équipe "Tradition sacrée" va vite se sentir bridé et partir.',
+    action: 'Créez des onboardings personnalisés selon l\'île-culture de chaque nouvel arrivant.',
     result: '+40% de rétention à 12 mois',
     color: 'from-emerald-500 to-teal-600',
   },
@@ -38,8 +39,8 @@ const USE_CASES = [
     role: 'Chef de projet',
     emoji: '📋',
     problem: 'Vos deadlines explosent malgré une équipe compétente ?',
-    solution: 'Comprenez que vos Héros foncent sans filet pendant que vos Gardiens bloquent sur la validation.',
-    action: 'Assignez les rôles selon les profils : le Héros en lead, le Gardien en qualité.',
+    solution: 'Les "Culte de la consommation" veulent des résultats rapides, les "Contrat social" veulent comprendre le pourquoi.',
+    action: 'Clarifiez les rôles : donnez du sens aux uns, des objectifs chiffrés aux autres.',
     result: '-25% de délais dépassés',
     color: 'from-amber-500 to-orange-600',
   },
@@ -47,8 +48,8 @@ const USE_CASES = [
     role: 'Dirigeant / CEO',
     emoji: '🏢',
     problem: 'Votre transformation digitale patine ?',
-    solution: 'Votre comité de direction est composé à 80% de Gardiens. Normal que le changement bloque.',
-    action: 'Rééquilibrez avec des Magiciens et des Rebelles pour insuffler le mouvement.',
+    solution: 'Si votre CODIR est à 80% "Tradition sacrée", normal que l\'innovation bloque.',
+    action: 'Intégrez des profils "Mythe du progrès" et "Réconciliation homme/nature" pour le changement.',
     result: '2x plus vite sur les projets de transformation',
     color: 'from-purple-500 to-pink-600',
   },
@@ -59,16 +60,16 @@ const FEATURE_DEMOS = [
   {
     id: 'onboarding',
     title: 'Onboarding personnalisé',
-    subtitle: 'Chaque collaborateur reçoit un parcours adapté à son profil',
+    subtitle: 'Chaque collaborateur reçoit un parcours adapté à son île-culture',
     mockup: {
-      profile: 'Explorateur',
-      emoji: '🧭',
-      color: '#3B82F6',
+      profile: 'Quête du plaisir',
+      emoji: '🎉',
+      color: '#EF4444',
       recommendations: [
-        { icon: '🚀', text: 'Proposez-lui des missions variées dès la première semaine' },
-        { icon: '🗺️', text: 'Laissez-le explorer l\'entreprise librement' },
-        { icon: '🤝', text: 'Présentez-le à des équipes différentes' },
-        { icon: '⚠️', text: 'Évitez les processus trop rigides au début' },
+        { icon: '🎯', text: 'Proposez-lui des missions stimulantes et variées' },
+        { icon: '🤝', text: 'Créez des moments conviviaux dès la première semaine' },
+        { icon: '🚀', text: 'Laissez-lui de l\'autonomie dans son organisation' },
+        { icon: '⚠️', text: 'Évitez les processus trop rigides et formels' },
       ],
     },
   },
@@ -79,12 +80,12 @@ const FEATURE_DEMOS = [
     mockup: {
       teamName: 'Équipe Produit',
       members: [
-        { name: 'Alice', profile: 'Créateur', emoji: '🎨', color: '#F59E0B' },
-        { name: 'Bruno', profile: 'Sage', emoji: '📚', color: '#8B5CF6' },
-        { name: 'Clara', profile: 'Héros', emoji: '⚔️', color: '#EF4444' },
-        { name: 'David', profile: 'Gardien', emoji: '🛡️', color: '#10B981' },
+        { name: 'Alice', profile: 'Mythe du progrès', emoji: '🔬', color: '#3B82F6' },
+        { name: 'Bruno', profile: 'Primauté du clan', emoji: '👨‍👩‍👧‍👦', color: '#EC4899' },
+        { name: 'Clara', profile: 'Culte conso', emoji: '💎', color: '#F59E0B' },
+        { name: 'David', profile: 'Contrat social', emoji: '⚖️', color: '#8B5CF6' },
       ],
-      insight: 'Équipe créative mais attention aux tensions Créateur/Gardien sur les deadlines',
+      insight: 'Équipe diversifiée - Attention aux tensions progrès/tradition sur les méthodes',
     },
   },
   {
@@ -92,14 +93,14 @@ const FEATURE_DEMOS = [
     title: 'Conseils management',
     subtitle: 'Recevez des recommandations concrètes pour manager chaque profil',
     mockup: {
-      profile: 'Gardien',
-      emoji: '🛡️',
-      color: '#10B981',
+      profile: 'Primauté du clan',
+      emoji: '👨‍👩‍👧‍👦',
+      color: '#EC4899',
       tips: [
-        { do: true, text: 'Donnez-lui le temps d\'analyser avant de décider' },
-        { do: true, text: 'Valorisez son souci du détail et de la qualité' },
-        { do: false, text: 'Ne changez pas les plans au dernier moment' },
-        { do: false, text: 'N\'imposez pas de risques non calculés' },
+        { do: true, text: 'Valorisez l\'esprit d\'équipe et la convivialité' },
+        { do: true, text: 'Respectez l\'équilibre vie pro/vie perso' },
+        { do: false, text: 'Ne bousculez pas les traditions établies' },
+        { do: false, text: 'Évitez les changements trop rapides' },
       ],
     },
   },
@@ -116,29 +117,29 @@ const CONCRETE_SCENARIOS = [
   {
     title: 'Réunion qui tourne en rond',
     before: 'Tout le monde parle en même temps, personne ne s\'écoute, aucune décision ne sort.',
-    insight: 'Votre équipe a 3 Rebelles et 2 Héros. Ils ont besoin de confrontation pour avancer.',
-    after: 'Instaurez un "combat d\'idées" structuré : chacun défend sa position, puis vote.',
+    insight: '3 "Culte de la consommation" veulent des résultats rapides, 2 "Contrat social" veulent débattre.',
+    after: 'Structurez : 10 min de débat libre, puis prise de décision avec des critères objectifs.',
     emoji: '🗣️',
   },
   {
     title: 'Nouveau collaborateur isolé',
     before: 'Marie, arrivée il y a 3 mois, déjeune seule et ne participe pas aux discussions.',
-    insight: 'Marie est Sage, entourée d\'Explorateurs extravertis. Elle a besoin de temps.',
-    after: 'Assignez-lui un buddy Gardien et proposez des échanges en petit comité.',
+    insight: 'Marie est "Tradition sacrée", entourée de "Quête du plaisir" très sociables.',
+    after: 'Proposez-lui des activités en petit comité, respectez son besoin de repères stables.',
     emoji: '👤',
   },
   {
     title: 'Projet en retard chronique',
     before: 'L\'équipe est motivée mais le projet accumule du retard à chaque sprint.',
-    insight: '4 Créateurs, 0 Gardien. Beaucoup d\'idées, zéro rigueur sur l\'exécution.',
-    after: 'Recrutez un profil Gardien ou Sage pour structurer et prioriser.',
+    insight: '4 "Réconciliation homme/nature" qui débattent des impacts, 0 "Mythe du progrès" pour exécuter.',
+    after: 'Intégrez un profil orienté résultats pour structurer et tenir les délais.',
     emoji: '⏰',
   },
   {
     title: 'Conflit entre 2 collaborateurs',
     before: 'Paul et Julie ne peuvent plus travailler ensemble depuis le dernier projet.',
-    insight: 'Paul (Héros) fonce, Julie (Gardienne) freine. Ils se bloquent mutuellement.',
-    after: 'Paul propose, Julie valide. Définissez leurs rôles complémentaires clairement.',
+    insight: 'Paul ("Mythe du progrès") veut innover vite, Julie ("Primauté du clan") protège l\'équipe.',
+    after: 'Paul propose les innovations, Julie s\'assure que l\'équipe suit. Rôles complémentaires.',
     emoji: '⚡',
   },
 ]
@@ -646,22 +647,22 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Les 8 Mythes - Rapide */}
+      {/* Les 8 Îles-Cultures */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Les 8 profils culturels
+              Les 8 Îles-Cultures françaises
             </h2>
             <p className="mt-4 text-lg text-gray-600">
-              Basés sur les archétypes jungiens, validés sur 50 000+ profils
+              Étude ethnographique sur 2023 Français - Chaque île-culture représente un système de croyances partagées
             </p>
           </div>
 
           <div className="flex flex-wrap justify-center gap-4">
-            {MYTHES.map((mythe, index) => (
+            {ILES_CULTURES.map((ile, index) => (
               <motion.div
-                key={mythe.name}
+                key={ile.name}
                 initial={{ opacity: 0, scale: 0.5 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -671,14 +672,15 @@ export function LandingPage() {
               >
                 <div
                   className="px-5 py-3 rounded-2xl text-white font-medium shadow-lg cursor-pointer transition-shadow hover:shadow-xl flex items-center gap-2"
-                  style={{ backgroundColor: mythe.color }}
+                  style={{ backgroundColor: ile.color }}
                 >
-                  <span className="text-xl">{mythe.emoji}</span>
-                  <span>{mythe.name}</span>
+                  <span className="text-xl">{ile.emoji}</span>
+                  <span className="text-sm">{ile.name}</span>
                 </div>
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap">
-                    {mythe.description}
+                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap text-center">
+                    <div className="font-bold">{ile.poids}</div>
+                    <div>{ile.description}</div>
                   </div>
                 </div>
               </motion.div>

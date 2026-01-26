@@ -98,6 +98,40 @@ All responses are JSON with consistent error format:
       summary: 'Health check'
     }
   })
+  .get('/debug/info', async () => {
+    const fs = await import('fs/promises')
+    const migrationsFolder = '/app/packages/db/drizzle'
+    let migrationFiles: string[] = []
+    let migrationFolderExists = false
+
+    try {
+      migrationFiles = await fs.readdir(migrationsFolder)
+      migrationFolderExists = true
+    } catch {
+      migrationFolderExists = false
+    }
+
+    return {
+      nodeEnv: process.env['NODE_ENV'],
+      databaseUrlSet: !!process.env['DATABASE_URL'],
+      migrationsFolder,
+      migrationFolderExists,
+      migrationFiles,
+      timestamp: new Date().toISOString()
+    }
+  })
+  .post('/debug/migrate', async () => {
+    try {
+      await runMigrations()
+      return { success: true, message: 'Migrations completed successfully' }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }
+    }
+  })
   .use(authRoutes)
   .use(teamRoutes)
   .use(campaignRoutes)

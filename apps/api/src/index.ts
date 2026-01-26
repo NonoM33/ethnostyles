@@ -121,6 +121,24 @@ All responses are JSON with consistent error format:
     }
   })
   .get('/debug/test', () => ({ test: 'ok' }))
+  .get('/debug/db', async () => {
+    const { db, sql } = await import('@etnostyles/db')
+    try {
+      // Try to list tables
+      const result = await db.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `)
+      return { success: true, tables: result }
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  })
   .get('/debug/migrate', async () => {
     console.log('Starting manual migration run...')
     try {

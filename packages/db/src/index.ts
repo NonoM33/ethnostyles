@@ -10,9 +10,10 @@ export const db = drizzle(client, { schema })
 
 // Run migrations
 export async function runMigrations() {
-  // In production (Docker), migrations are at /app/packages/db/drizzle
+  // In Docker (production/staging), migrations are at /app/packages/db/drizzle
   // In development, they're relative to this file
-  const migrationsFolder = process.env['NODE_ENV'] === 'production'
+  const isDocker = process.env['NODE_ENV'] === 'production' || process.env['NODE_ENV'] === 'staging'
+  const migrationsFolder = isDocker
     ? '/app/packages/db/drizzle'
     : new URL('../drizzle', import.meta.url).pathname
 

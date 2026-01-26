@@ -39,6 +39,7 @@ services:
       - "3000"
     labels:
       - "traefik.http.services.api.loadbalancer.server.port=3000"
+      - "traefik.http.routers.api.service=api"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

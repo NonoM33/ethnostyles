@@ -47,15 +47,8 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1769375168808,
-      "tag": "0006_secret_cannonball",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
       "when": 1769376974729,
-      "tag": "0007_square_sasquatch",
+      "tag": "0006_square_sasquatch",
       "breakpoints": true
     }
   ]

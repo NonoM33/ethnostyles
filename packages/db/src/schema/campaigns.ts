@@ -93,6 +93,3 @@ export const campaigns = pgTable('campaigns', {
 
 export type Campaign = typeof campaigns.$inferSelect
 export type NewCampaign = typeof campaigns.$inferInsert
-
-// Export the enums
-export { questionnaireSizeEnum, questionnaireStyleEnum }

@@ -3,6 +3,9 @@ FROM oven/bun:1.2 AS builder
 
 WORKDIR /app
 
+# Cache bust - v2
+ARG CACHE_BUST=1
+
 # Copy package files
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/

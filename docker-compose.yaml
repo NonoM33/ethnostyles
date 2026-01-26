@@ -38,6 +38,7 @@ services:
     expose:
       - "3000"
     labels:
+      - "traefik.docker.network=coolify"
       - "traefik.http.services.api-backend.loadbalancer.server.port=3000"
       - "traefik.http.routers.api-router.rule=Host(`api-cswcoc08w0c84sgocsswok04.157.180.43.90.sslip.io`) || Host(`api-pwgsgko4og0g48gkkowk8gcw.157.180.43.90.sslip.io`) || Host(`v0gss44sc84osg8k888kws4o.157.180.43.90.sslip.io`)"
       - "traefik.http.routers.api-router.entryPoints=http"

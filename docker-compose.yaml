@@ -10,12 +10,6 @@ services:
         - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
     expose:
       - "80"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ethnostyle-web.rule=Host(`cswcoc08w0c84sgocsswok04.157.180.43.90.sslip.io`) && !PathPrefix(`/api`) && !PathPrefix(`/health`)"
-      - "traefik.http.routers.ethnostyle-web.entrypoints=http"
-      - "traefik.http.routers.ethnostyle-web.priority=1"
-      - "traefik.http.services.ethnostyle-web.loadbalancer.server.port=80"
     depends_on:
       - api
     healthcheck:
@@ -43,12 +37,6 @@ services:
       - API_URL=${API_URL}
     expose:
       - "3000"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ethnostyle-api.rule=Host(`cswcoc08w0c84sgocsswok04.157.180.43.90.sslip.io`) && (PathPrefix(`/api`) || PathPrefix(`/health`))"
-      - "traefik.http.routers.ethnostyle-api.entrypoints=http"
-      - "traefik.http.routers.ethnostyle-api.priority=2"
-      - "traefik.http.services.ethnostyle-api.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

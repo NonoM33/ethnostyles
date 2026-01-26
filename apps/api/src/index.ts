@@ -121,11 +121,16 @@ All responses are JSON with consistent error format:
     }
   })
   .get('/debug/test', () => ({ test: 'ok' }))
-  .get('/debug/run-migrations', async () => {
+  .get('/debug/migrate', async () => {
+    console.log('Starting manual migration run...')
     try {
-      await runMigrations()
+      // Import dynamically to catch any module loading errors
+      const { runMigrations: migrate } = await import('@etnostyles/db')
+      await migrate()
+      console.log('Manual migration completed successfully')
       return { success: true, message: 'Migrations completed successfully' }
     } catch (error) {
+      console.error('Manual migration failed:', error)
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error',

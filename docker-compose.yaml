@@ -18,12 +18,16 @@ services:
       - API_URL=${API_URL}
     expose:
       - "3000"
+    labels:
+      - coolify.managed=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - coolify
 
   web:
     build:
@@ -34,6 +38,8 @@ services:
         - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
     expose:
       - "80"
+    labels:
+      - coolify.managed=true
     depends_on:
       - api
     healthcheck:
@@ -41,3 +47,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true

@@ -1,0 +1,26 @@
+{
+  "extends": "./tooling/typescript/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@etnostyles/db": ["packages/db/src"],
+      "@etnostyles/db/*": ["packages/db/src/*"],
+      "@etnostyles/shared": ["packages/shared/src"],
+      "@etnostyles/shared/*": ["packages/shared/src/*"],
+      "@etnostyles/config": ["packages/config/src"],
+      "@etnostyles/config/*": ["packages/config/src/*"],
+      "@etnostyles/email": ["packages/email/src"],
+      "@etnostyles/email/*": ["packages/email/src/*"]
+    }
+  },
+  "references": [
+    { "path": "apps/api" },
+    { "path": "apps/web" },
+    { "path": "packages/db" },
+    { "path": "packages/shared" },
+    { "path": "packages/config" },
+    { "path": "packages/email" }
+  ],
+  "include": [],
+  "exclude": ["node_modules", "dist"]
+}

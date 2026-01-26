@@ -1,0 +1,26 @@
+{
+  "name": "etnostyles",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "bun run --cwd apps/api dev & bun run --cwd apps/web dev",
+    "dev:api": "bun run --cwd apps/api dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "build": "bun run --cwd apps/api build && bun run --cwd apps/web build",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "db:generate": "bun run --cwd packages/db generate",
+    "db:migrate": "bun run --cwd packages/db migrate",
+    "db:push": "bun run --cwd packages/db push",
+    "db:seed": "bun run --cwd packages/db seed",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pdfkit": "0.17.4",
+    "eslint": "^9.0.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0"
+  }
+}

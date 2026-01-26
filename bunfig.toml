@@ -1,0 +1,11 @@
+[install]
+# Use exact versions for reproducible builds
+exact = true
+
+[install.cache]
+# Enable caching for faster installs
+disable = false
+
+[run]
+# Enable hot module reloading
+bun = true

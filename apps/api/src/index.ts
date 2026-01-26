@@ -12,6 +12,7 @@ import { organizationRoutes } from './routes/organization'
 import { teamsRoutes } from './routes/teams'
 import { analyticsRoutes } from './routes/analytics'
 import { billingRoutes } from './routes/billing'
+import { mcpRoutes } from './routes/mcp'
 
 const app = new Elysia()
   .use(cors({
@@ -58,6 +59,7 @@ All responses are JSON with consistent error format:
         { name: 'Teams', description: 'Team campaigns and composition (Epic 10)' },
         { name: 'Analytics', description: 'Advanced analytics - Culture map, Gap analysis, Trends (Epic 11)' },
         { name: 'Billing', description: 'Subscription, payments and invoices (Stripe integration)' },
+        { name: 'MCP', description: 'Model Context Protocol for LLM integration' },
       ],
       components: {
         securitySchemes: {
@@ -97,6 +99,7 @@ All responses are JSON with consistent error format:
   .use(teamsRoutes)
   .use(analyticsRoutes)
   .use(billingRoutes)
+  .use(mcpRoutes)
   .listen(process.env['API_PORT'] ? parseInt(process.env['API_PORT']) : 3000)
 
 console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)

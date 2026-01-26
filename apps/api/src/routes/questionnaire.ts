@@ -2,6 +2,17 @@ import { Elysia, t } from 'elysia'
 import { db, campaigns, respondents, responses, questions, eq, and, desc } from '@etnostyles/db'
 import { sendEmail, generateResultsEmailHtml, getResultsEmailSubject } from '@etnostyles/email'
 import { createHmac, randomBytes } from 'crypto'
+import {
+  ETS_GROUPS,
+  QUIZ_QUESTIONS,
+  getQuestionsForSize,
+  calculateQuizScores,
+  getDominantMyths,
+  calculateConfidence,
+  QUESTIONNAIRE_SIZES,
+  type GroupKey,
+  type QuestionnaireSize,
+} from '@etnostyles/shared/ets-data'
 
 // In-memory store for deletion tokens (in production, use Redis or DB)
 const deletionTokens = new Map<string, { respondentId: string; email: string; expiresAt: Date }>()
@@ -28,16 +39,40 @@ function cleanExpiredTokens() {
   }
 }
 
-// Mythe descriptions for email
-const MYTHE_DESCRIPTIONS: Record<string, string> = {
-  Explorateur: 'Vous êtes animé par la découverte et l\'aventure. Votre soif de nouveauté vous pousse à explorer de nouveaux horizons.',
-  Gardien: 'Vous accordez une grande importance à la sécurité et à la préservation. Vous êtes un pilier de stabilité pour votre entourage.',
-  Créateur: 'Vous êtes animé par le désir de créer et d\'innover. Votre imagination débordante vous pousse à transformer les idées en réalité.',
-  Sage: 'Vous recherchez la vérité et la compréhension profonde. Votre soif de savoir vous guide vers une réflexion constante.',
-  Héros: 'Vous êtes prêt à relever tous les défis pour atteindre vos objectifs. Votre détermination inspire les autres.',
-  Rebelle: 'Vous remettez en question l\'ordre établi et cherchez à transformer ce qui ne fonctionne pas.',
-  Magicien: 'Vous avez le don de voir les possibilités là où les autres voient des limites.',
-  Innocent: 'Vous voyez le meilleur en chaque personne et situation. Votre foi en l\'humanité inspire la confiance.',
+// Mythe descriptions for email - uses ETS_GROUPS
+function getMytheDescription(mytheKey: string): string {
+  const group = ETS_GROUPS[mytheKey as GroupKey]
+  return group?.fullDescription || group?.description || ''
+}
+
+// Get mythe name for display
+function getMytheName(mytheKey: string): string {
+  const group = ETS_GROUPS[mytheKey as GroupKey]
+  return group?.name || mytheKey
+}
+
+/**
+ * Get questions for a campaign based on its configuration
+ */
+function getCampaignQuestions(campaign: { questionnaireSize?: string | null; customQuestionIds?: string | null }) {
+  // Check for custom question selection
+  if (campaign.customQuestionIds) {
+    try {
+      const ids = JSON.parse(campaign.customQuestionIds) as number[]
+      return QUIZ_QUESTIONS.filter(q => ids.includes(q.id))
+    } catch {
+      // Fall through to size-based selection
+    }
+  }
+
+  // Use size-based selection
+  const sizeMap: Record<string, QuestionnaireSize> = {
+    express: QUESTIONNAIRE_SIZES.EXPRESS,
+    standard: QUESTIONNAIRE_SIZES.STANDARD,
+    complete: QUESTIONNAIRE_SIZES.COMPLETE,
+  }
+  const size = sizeMap[campaign.questionnaireSize || 'standard'] || QUESTIONNAIRE_SIZES.STANDARD
+  return getQuestionsForSize(size)
 }
 
 /**
@@ -49,17 +84,7 @@ function generatePasseportCode(): string {
   return `${segment()}-${segment()}-${segment()}`
 }
 
-/**
- * Get sample questions (in production, load from database)
- * Using a simplified set for MVP - in production would have 170 questions
- */
-function getSampleQuestions() {
-  // Sample questions for MVP testing
-  return Array.from({ length: 170 }, (_, i) => ({
-    number: i + 1,
-    text: `Question ${i + 1}: Êtes-vous d'accord avec l'affirmation suivante concernant vos valeurs et préférences?`,
-  }))
-}
+// getSampleQuestions is replaced by getCampaignQuestions above
 
 /**
  * Send webhook notification with retry (3 attempts, exponential backoff)
@@ -125,6 +150,8 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
           slug: campaigns.slug,
           logoUrl: campaigns.logoUrl,
           primaryColor: campaigns.primaryColor,
+          questionnaireSize: campaigns.questionnaireSize,
+          questionnaireStyle: campaigns.questionnaireStyle,
         })
         .from(campaigns)
         .where(eq(campaigns.slug, params.slug))
@@ -208,6 +235,10 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
         }
       }
 
+      // Get total questions based on campaign configuration
+      const questions = getCampaignQuestions(campaign)
+      const totalQuestions = questions.length
+
       // Create new respondent
       const [respondent] = await db
         .insert(respondents)
@@ -217,7 +248,7 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
           consentGiven: true,
           consentAt: new Date(),
           currentQuestion: 1,
-          totalQuestions: 170,
+          totalQuestions,
         })
         .returning()
 
@@ -265,16 +296,33 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
       }
 
       if (respondent.status === 'completed') {
+        const primaryGroup = respondent.primaryMythe ? ETS_GROUPS[respondent.primaryMythe as GroupKey] : null
         return {
           isCompleted: true,
           passeportCode: respondent.passeportCode,
           primaryMythe: respondent.primaryMythe,
+          primaryDetails: primaryGroup ? {
+            name: primaryGroup.name,
+            tagline: primaryGroup.tagline,
+            emoji: primaryGroup.emoji,
+            color: primaryGroup.color,
+          } : null,
         }
       }
 
-      // Get current question
-      const questions = getSampleQuestions()
-      const currentQ = questions[respondent.currentQuestion - 1]
+      // Get campaign for questionnaire configuration
+      const [campaign] = await db
+        .select({
+          questionnaireSize: campaigns.questionnaireSize,
+          customQuestionIds: campaigns.customQuestionIds,
+        })
+        .from(campaigns)
+        .where(eq(campaigns.id, respondent.campaignId))
+        .limit(1)
+
+      // Get current question from dynamic questionnaire
+      const questionList = getCampaignQuestions(campaign || {})
+      const currentQ = questionList[respondent.currentQuestion - 1]
 
       if (!currentQ) {
         set.status = 500
@@ -283,7 +331,13 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
 
       return {
         isCompleted: false,
-        question: currentQ,
+        question: {
+          id: currentQ.id,
+          type: currentQ.type,
+          text: currentQ.question,
+          options: currentQ.options.map(o => o.text),
+          round: currentQ.round,
+        },
         progress: {
           current: respondent.currentQuestion,
           total: respondent.totalQuestions,
@@ -305,11 +359,11 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
   .post(
     '/respondent/:id/answer',
     async ({ params, body, set }) => {
-      const { questionNumber, answer } = body
+      const { questionNumber, answerIndex } = body
 
-      if (answer < 1 || answer > 4) {
+      if (answerIndex < 0 || answerIndex > 3) {
         set.status = 400
-        return { error: 'INVALID_ANSWER', message: 'La réponse doit être entre 1 et 4' }
+        return { error: 'INVALID_ANSWER', message: 'L\'index de réponse doit être entre 0 et 3' }
       }
 
       const [respondent] = await db
@@ -331,8 +385,8 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
       // Save answer
       await db.insert(responses).values({
         respondentId: respondent.id,
-        questionNumber,
-        answer,
+        questionId: questionNumber,
+        answerIndex,
       })
 
       // Check if this was the last question
@@ -354,9 +408,43 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
           attempts++
         }
 
-        // Calculate profile (simplified - in production would be complex algorithm)
-        const mythes = ['Explorateur', 'Gardien', 'Créateur', 'Sage', 'Héros', 'Rebelle', 'Magicien', 'Innocent'] as const
-        const primaryMythe = mythes[Math.floor(Math.random() * mythes.length)] ?? 'Explorateur'
+        // Get campaign for questionnaire configuration
+        const [campaignConfig] = await db
+          .select({
+            questionnaireSize: campaigns.questionnaireSize,
+            customQuestionIds: campaigns.customQuestionIds,
+          })
+          .from(campaigns)
+          .where(eq(campaigns.id, respondent.campaignId))
+          .limit(1)
+
+        // Get all answers for this respondent
+        const allResponses = await db
+          .select({
+            questionId: responses.questionId,
+            answerIndex: responses.answerIndex,
+          })
+          .from(responses)
+          .where(eq(responses.respondentId, params.id))
+          .orderBy(responses.questionId)
+
+        // Get the questions used for this campaign
+        const questionList = getCampaignQuestions(campaignConfig || {})
+
+        // Build answers array in question order
+        const answersArray = questionList.map((q) => {
+          const resp = allResponses.find(r => r.questionId === q.id)
+          return resp?.answerIndex ?? 0
+        })
+
+        // Calculate profile using the real scoring algorithm
+        const scores = calculateQuizScores(answersArray, questionList)
+        const { primary, secondary } = getDominantMyths(scores)
+        const confidence = calculateConfidence(scores)
+
+        const primaryMythe = primary.key
+        const secondaryMythe = secondary.key
+        const confidencePercent = Math.round(confidence * 100)
 
         // Update respondent as completed
         await db
@@ -367,9 +455,15 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
             completedAt: new Date(),
             passeportCode,
             primaryMythe,
+            secondaryMythe,
+            confidenceScore: confidencePercent,
             profileData: JSON.stringify({
               primary: primaryMythe,
-              scores: mythes.reduce((acc, m) => ({ ...acc, [m]: Math.floor(Math.random() * 100) }), {}),
+              secondary: secondaryMythe,
+              confidence: confidencePercent,
+              scores: Object.fromEntries(
+                Object.entries(scores).map(([key, value]) => [key, Math.round(value * 100)])
+              ),
             }),
             updatedAt: new Date(),
           })
@@ -392,17 +486,18 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
         // Send results email (async, don't block response)
         const resultsUrl = `${process.env['WEB_URL'] || 'http://localhost:5173'}/q/${campaign?.slug}/results/${params.id}`
 
+        const primaryGroup = ETS_GROUPS[primaryMythe as GroupKey]
         sendEmail({
           to: respondent.email,
-          subject: getResultsEmailSubject(primaryMythe),
+          subject: getResultsEmailSubject(primaryGroup?.name || primaryMythe),
           html: generateResultsEmailHtml({
-            primaryMythe,
-            mytheDescription: MYTHE_DESCRIPTIONS[primaryMythe] || '',
+            primaryMythe: primaryGroup?.name || primaryMythe,
+            mytheDescription: getMytheDescription(primaryMythe),
             passeportCode,
             resultsUrl,
             campaignName: campaign?.name || 'Ethnostyles',
             campaignLogo: campaign?.logoUrl,
-            primaryColor: campaign?.primaryColor || undefined,
+            primaryColor: campaign?.primaryColor || primaryGroup?.color || undefined,
           }),
         }).catch((err) => {
           console.error('[EMAIL] Failed to send results email:', err)
@@ -417,6 +512,8 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
               respondentId: params.id,
               email: respondent.email,
               primaryMythe,
+              secondaryMythe,
+              confidence: confidencePercent,
               passeportCode,
               completedAt: new Date().toISOString(),
               campaignId: respondent.campaignId,
@@ -431,6 +528,14 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
           isCompleted: true,
           passeportCode,
           primaryMythe,
+          primaryDetails: primaryGroup ? {
+            name: primaryGroup.name,
+            tagline: primaryGroup.tagline,
+            emoji: primaryGroup.emoji,
+            color: primaryGroup.color,
+          } : null,
+          secondaryMythe,
+          confidence: confidencePercent,
         }
       }
 
@@ -459,11 +564,12 @@ export const questionnaireRoutes = new Elysia({ prefix: '/q' })
       }),
       body: t.Object({
         questionNumber: t.Number({ minimum: 1 }),
-        answer: t.Number({ minimum: 1, maximum: 4 }),
+        answerIndex: t.Number({ minimum: 0, maximum: 3 }),
       }),
       detail: {
         tags: ['Questionnaire'],
         summary: 'Submit answer to a question',
+        description: 'Submit an answer using 0-based option index (0-1 for binary questions, 0-3 for choice questions)',
       },
     }
   )

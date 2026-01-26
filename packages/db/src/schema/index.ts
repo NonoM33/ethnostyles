@@ -31,12 +31,18 @@ export {
 export {
   campaigns,
   campaignStatusEnum,
+  questionnaireSizeEnum,
+  questionnaireStyleEnum,
   CAMPAIGN_STATUSES,
   CAMPAIGN_TYPES,
+  QUESTIONNAIRE_SIZES,
+  QUESTIONNAIRE_STYLES,
   type Campaign,
   type NewCampaign,
   type CampaignStatus,
   type CampaignType,
+  type QuestionnaireSize,
+  type QuestionnaireStyle,
 } from './campaigns'
 
 // Questionnaire tables
@@ -45,7 +51,9 @@ export {
   responses,
   questions,
   respondentStatusEnum,
+  questionTypeEnum,
   RESPONDENT_STATUSES,
+  QUESTION_TYPES,
   type Respondent,
   type NewRespondent,
   type RespondentStatus,
@@ -53,6 +61,8 @@ export {
   type NewResponse,
   type Question,
   type NewQuestion,
+  type QuestionType,
+  type QuestionOption,
 } from './questionnaire'
 
 // API Keys
@@ -84,9 +94,13 @@ export {
   paymentMethods,
   invoices,
   usageRecords,
+  apiCredits,
+  apiCallLogs,
+  creditPurchases,
   subscriptionStatusEnum,
   planIdEnum,
   PLANS,
+  API_PRICING,
   type PlanId,
   type Subscription,
   type NewSubscription,
@@ -96,4 +110,10 @@ export {
   type NewInvoice,
   type UsageRecord,
   type NewUsageRecord,
+  type ApiCredits,
+  type NewApiCredits,
+  type ApiCallLog,
+  type NewApiCallLog,
+  type CreditPurchase,
+  type NewCreditPurchase,
 } from './billing'

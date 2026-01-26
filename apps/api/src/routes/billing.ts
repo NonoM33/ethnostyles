@@ -6,14 +6,18 @@ import {
   paymentMethods,
   invoices,
   usageRecords,
+  apiCredits,
+  creditPurchases,
+  apiCallLogs,
   users,
   campaigns,
   respondents,
   sessions,
   PLANS,
+  API_PRICING,
   type PlanId,
 } from '@etnostyles/db/schema'
-import { eq, and, count, gte, lte } from 'drizzle-orm'
+import { eq, and, count, gte, lte, desc, sql } from 'drizzle-orm'
 
 /**
  * Get current user from session token
@@ -653,6 +657,56 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
         break
       }
 
+      case 'payment_intent.succeeded': {
+        // Handle credit purchase
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        const { purchaseId } = paymentIntent.metadata || {}
+
+        if (purchaseId) {
+          const [purchase] = await db
+            .select()
+            .from(creditPurchases)
+            .where(eq(creditPurchases.id, purchaseId))
+            .limit(1)
+
+          if (purchase && purchase.status === 'pending') {
+            // Update purchase status
+            await db
+              .update(creditPurchases)
+              .set({ status: 'completed', updatedAt: new Date() })
+              .where(eq(creditPurchases.id, purchaseId))
+
+            // Add credits to tenant
+            const [existingCredits] = await db
+              .select()
+              .from(apiCredits)
+              .where(eq(apiCredits.tenantId, purchase.tenantId))
+              .limit(1)
+
+            if (existingCredits) {
+              await db
+                .update(apiCredits)
+                .set({
+                  balance: existingCredits.balance + purchase.credits,
+                  totalPurchased: existingCredits.totalPurchased + purchase.credits,
+                  updatedAt: new Date(),
+                })
+                .where(eq(apiCredits.tenantId, purchase.tenantId))
+            } else {
+              await db.insert(apiCredits).values({
+                tenantId: purchase.tenantId,
+                balance: purchase.credits,
+                weeklyUsed: 0,
+                weekStartsAt: new Date(),
+                totalPurchased: purchase.credits,
+                totalUsed: 0,
+              })
+            }
+          }
+        }
+        break
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }
@@ -664,3 +718,267 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
       summary: 'Stripe webhook endpoint',
     },
   })
+
+  // ═══════════════════════════════════════════════════════════════
+  // API CREDITS & USAGE
+  // ═══════════════════════════════════════════════════════════════
+
+  // Get API credits and usage
+  .get('/api-credits', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    // Get or create credits record
+    const weekStart = getWeekStart()
+    let [credits] = await db
+      .select()
+      .from(apiCredits)
+      .where(eq(apiCredits.tenantId, user.tenantId))
+      .limit(1)
+
+    if (!credits) {
+      await db.insert(apiCredits).values({
+        tenantId: user.tenantId,
+        balance: 0,
+        weeklyUsed: 0,
+        weekStartsAt: weekStart,
+        totalPurchased: 0,
+        totalUsed: 0,
+      })
+      credits = {
+        id: 'new',
+        tenantId: user.tenantId,
+        balance: 0,
+        weeklyUsed: 0,
+        weekStartsAt: weekStart,
+        totalPurchased: 0,
+        totalUsed: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    } else if (credits.weekStartsAt < weekStart) {
+      // Reset weekly usage
+      await db
+        .update(apiCredits)
+        .set({ weeklyUsed: 0, weekStartsAt: weekStart })
+        .where(eq(apiCredits.id, credits.id))
+      credits = { ...credits, weeklyUsed: 0, weekStartsAt: weekStart }
+    }
+
+    // Get plan limits
+    const subscription = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.tenantId, user.tenantId),
+    })
+    const planId = subscription?.planId || 'free'
+    const plan = PLANS[planId]
+    const weeklyLimit = plan.limits.apiCallsPerWeek || 0
+    const apiEnabled = plan.limits.apiEnabled || false
+
+    // Get recent API calls
+    const recentCalls = await db
+      .select({
+        date: sql<string>`DATE(${apiCallLogs.calledAt})`,
+        count: count(),
+      })
+      .from(apiCallLogs)
+      .where(eq(apiCallLogs.tenantId, user.tenantId))
+      .groupBy(sql`DATE(${apiCallLogs.calledAt})`)
+      .orderBy(desc(sql`DATE(${apiCallLogs.calledAt})`))
+      .limit(30)
+
+    return {
+      credits: {
+        balance: credits.balance,
+        weeklyUsed: credits.weeklyUsed,
+        weeklyLimit,
+        weeklyRemaining: Math.max(0, weeklyLimit - credits.weeklyUsed),
+        totalPurchased: credits.totalPurchased,
+        totalUsed: credits.totalUsed,
+        weekResetsAt: new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      apiEnabled,
+      planId,
+      recentUsage: recentCalls.map(c => ({ date: c.date, count: c.count })),
+      pricing: API_PRICING,
+    }
+  }, {
+    detail: {
+      tags: ['Billing'],
+      summary: 'Get API credits and usage',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+  // Purchase API credits
+  .post('/purchase-credits', async ({ headers, body, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+    if (user.role !== 'admin') {
+      set.status = 403
+      return { error: 'FORBIDDEN', message: 'Admin access required' }
+    }
+
+    const { bundle } = body as { bundle: 'small' | 'medium' | 'large' }
+
+    const bundleInfo = {
+      small: API_PRICING.bundleSmall,
+      medium: API_PRICING.bundleMedium,
+      large: API_PRICING.bundleLarge,
+    }[bundle]
+
+    if (!bundleInfo) {
+      set.status = 400
+      return { error: 'INVALID_BUNDLE', message: 'Invalid bundle type' }
+    }
+
+    // Get or create Stripe customer
+    const customerId = await getOrCreateStripeCustomer(
+      user.tenantId,
+      user.email,
+      user.name || undefined
+    )
+
+    // Create purchase record
+    const purchaseId = crypto.randomUUID()
+    await db.insert(creditPurchases).values({
+      id: purchaseId,
+      tenantId: user.tenantId,
+      credits: bundleInfo.credits,
+      amountPaid: bundleInfo.price,
+      bundleType: bundle,
+      status: 'pending',
+    })
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: bundleInfo.price,
+      currency: 'eur',
+      customer: customerId,
+      metadata: {
+        purchaseId,
+        tenantId: user.tenantId,
+        bundle,
+        credits: bundleInfo.credits.toString(),
+      },
+    })
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      purchaseId,
+      credits: bundleInfo.credits,
+      amount: bundleInfo.price,
+    }
+  }, {
+    body: t.Object({
+      bundle: t.Union([t.Literal('small'), t.Literal('medium'), t.Literal('large')]),
+    }),
+    detail: {
+      tags: ['Billing'],
+      summary: 'Purchase API credits',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+  // Get credit purchase history
+  .get('/credit-purchases', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    const purchases = await db
+      .select()
+      .from(creditPurchases)
+      .where(eq(creditPurchases.tenantId, user.tenantId))
+      .orderBy(desc(creditPurchases.purchasedAt))
+      .limit(50)
+
+    return {
+      purchases: purchases.map(p => ({
+        id: p.id,
+        credits: p.credits,
+        amountPaid: p.amountPaid,
+        bundleType: p.bundleType,
+        status: p.status,
+        purchasedAt: p.purchasedAt.toISOString(),
+      })),
+    }
+  }, {
+    detail: {
+      tags: ['Billing'],
+      summary: 'Get credit purchase history',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+  // Get API call logs
+  .get('/api-logs', async ({ headers, query, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    const page = query.page || 1
+    const limit = Math.min(query.limit || 50, 100)
+    const offset = (page - 1) * limit
+
+    const [countResult] = await db
+      .select({ count: count() })
+      .from(apiCallLogs)
+      .where(eq(apiCallLogs.tenantId, user.tenantId))
+
+    const logs = await db
+      .select({
+        id: apiCallLogs.id,
+        endpoint: apiCallLogs.endpoint,
+        method: apiCallLogs.method,
+        statusCode: apiCallLogs.statusCode,
+        responseTimeMs: apiCallLogs.responseTimeMs,
+        creditsUsed: apiCallLogs.creditsUsed,
+        calledAt: apiCallLogs.calledAt,
+      })
+      .from(apiCallLogs)
+      .where(eq(apiCallLogs.tenantId, user.tenantId))
+      .orderBy(desc(apiCallLogs.calledAt))
+      .limit(limit)
+      .offset(offset)
+
+    return {
+      logs: logs.map(l => ({
+        ...l,
+        calledAt: l.calledAt.toISOString(),
+      })),
+      pagination: {
+        page,
+        limit,
+        total: countResult?.count || 0,
+        totalPages: Math.ceil((countResult?.count || 0) / limit),
+      },
+    }
+  }, {
+    query: t.Object({
+      page: t.Optional(t.Number({ minimum: 1 })),
+      limit: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
+    }),
+    detail: {
+      tags: ['Billing'],
+      summary: 'Get API call logs',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+// Helper function to get week start
+function getWeekStart(): Date {
+  const now = new Date()
+  const day = now.getUTCDay()
+  const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1)
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff, 0, 0, 0, 0))
+}

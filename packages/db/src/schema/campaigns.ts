@@ -1,10 +1,20 @@
-import { pgTable, uuid, varchar, text, pgEnum, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, text, pgEnum, timestamp, integer } from 'drizzle-orm/pg-core'
 import { tenantColumns } from './base'
 
 /**
  * Campaign status enum
  */
 export const campaignStatusEnum = pgEnum('campaign_status', ['draft', 'active', 'archived'])
+
+/**
+ * Questionnaire size enum
+ */
+export const questionnaireSizeEnum = pgEnum('questionnaire_size', ['express', 'standard', 'complete'])
+
+/**
+ * Questionnaire style enum
+ */
+export const questionnaireStyleEnum = pgEnum('questionnaire_style', ['professional', 'casual', 'neutral'])
 
 export const CAMPAIGN_STATUSES = {
   DRAFT: 'draft',
@@ -27,6 +37,28 @@ export const CAMPAIGN_TYPES = {
 export type CampaignType = (typeof CAMPAIGN_TYPES)[keyof typeof CAMPAIGN_TYPES]
 
 /**
+ * Questionnaire size constants
+ */
+export const QUESTIONNAIRE_SIZES = {
+  EXPRESS: 'express',      // 8 questions - quick assessment
+  STANDARD: 'standard',    // 16 questions - balanced
+  COMPLETE: 'complete',    // 30 questions - full depth
+} as const
+
+export type QuestionnaireSize = (typeof QUESTIONNAIRE_SIZES)[keyof typeof QUESTIONNAIRE_SIZES]
+
+/**
+ * Questionnaire style constants
+ */
+export const QUESTIONNAIRE_STYLES = {
+  PROFESSIONAL: 'professional',  // Formal language, work context
+  CASUAL: 'casual',              // Friendly, personal context
+  NEUTRAL: 'neutral',            // Standard balanced
+} as const
+
+export type QuestionnaireStyle = (typeof QUESTIONNAIRE_STYLES)[keyof typeof QUESTIONNAIRE_STYLES]
+
+/**
  * Campaigns table - stores marketing campaigns for questionnaires
  */
 export const campaigns = pgTable('campaigns', {
@@ -42,6 +74,10 @@ export const campaigns = pgTable('campaigns', {
   teamName: varchar('team_name', { length: 255 }),
   department: varchar('department', { length: 255 }),
   managerId: uuid('manager_id'), // User who manages this team campaign
+  // Questionnaire configuration
+  questionnaireSize: questionnaireSizeEnum('questionnaire_size').default('standard'), // 8, 16, or 30 questions
+  questionnaireStyle: questionnaireStyleEnum('questionnaire_style').default('professional'),
+  customQuestionIds: text('custom_question_ids'), // JSON array of question IDs for custom selection
   // Branding (Story 1.2)
   logoUrl: varchar('logo_url', { length: 500 }),
   primaryColor: varchar('primary_color', { length: 7 }), // #RRGGBB format
@@ -57,3 +93,6 @@ export const campaigns = pgTable('campaigns', {
 
 export type Campaign = typeof campaigns.$inferSelect
 export type NewCampaign = typeof campaigns.$inferInsert
+
+// Export the enums
+export { questionnaireSizeEnum, questionnaireStyleEnum }

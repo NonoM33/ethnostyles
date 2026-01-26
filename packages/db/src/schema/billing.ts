@@ -7,7 +7,7 @@ import { relations } from 'drizzle-orm'
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'past_due', 'canceled', 'trialing', 'incomplete', 'incomplete_expired', 'paused'])
 export const planIdEnum = pgEnum('plan_id', ['free', 'pro', 'enterprise'])
 
-// Plans configuration
+// Plans configuration with API limits
 export const PLANS = {
   free: {
     id: 'free',
@@ -18,6 +18,8 @@ export const PLANS = {
       campaigns: 1,
       responses: 50,
       teamMembers: 2,
+      apiCallsPerWeek: 0, // No API access
+      apiEnabled: false,
     },
     features: ['1 campagne active', '50 reponses/mois', '2 membres'],
   },
@@ -30,8 +32,10 @@ export const PLANS = {
       campaigns: null, // unlimited
       responses: 1000,
       teamMembers: 10,
+      apiCallsPerWeek: 100,
+      apiEnabled: true,
     },
-    features: ['Campagnes illimitees', '1000 reponses/mois', '10 membres inclus', 'Analytics avances'],
+    features: ['Campagnes illimitees', '1000 reponses/mois', '10 membres inclus', 'Analytics avances', '100 appels API/semaine'],
   },
   enterprise: {
     id: 'enterprise',
@@ -42,9 +46,19 @@ export const PLANS = {
       campaigns: null,
       responses: null,
       teamMembers: null,
+      apiCallsPerWeek: 10000, // Very high limit
+      apiEnabled: true,
     },
-    features: ['Tout illimite', 'SSO/SAML', 'API access', 'Support dedie'],
+    features: ['Tout illimite', 'SSO/SAML', 'API access illimite', 'Support dedie', 'MCP integration'],
   },
+} as const
+
+// API Pricing for top-up credits
+export const API_PRICING = {
+  pricePerCredit: 10, // 0.10€ per API call in cents
+  bundleSmall: { credits: 100, price: 800 },      // 8€ for 100 calls
+  bundleMedium: { credits: 500, price: 3500 },    // 35€ for 500 calls (30% discount)
+  bundleLarge: { credits: 2000, price: 12000 },   // 120€ for 2000 calls (40% discount)
 } as const
 
 export type PlanId = keyof typeof PLANS
@@ -111,6 +125,48 @@ export const usageRecords = pgTable('usage_records', {
   ...timestampColumns,
 })
 
+// API Credits balance per tenant
+export const apiCredits = pgTable('api_credits', {
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull().unique().references(() => tenants.id, { onDelete: 'cascade' }),
+  balance: integer('balance').notNull().default(0), // Current credit balance
+  weeklyUsed: integer('weekly_used').notNull().default(0), // API calls used this week
+  weekStartsAt: timestamp('week_starts_at', { mode: 'date' }).notNull(), // When the weekly limit resets
+  totalPurchased: integer('total_purchased').notNull().default(0), // All-time purchased credits
+  totalUsed: integer('total_used').notNull().default(0), // All-time used credits
+  ...timestampColumns,
+})
+
+// API Call log for tracking individual calls
+export const apiCallLogs = pgTable('api_call_logs', {
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  apiKeyId: varchar('api_key_id', { length: 36 }),
+  endpoint: varchar('endpoint', { length: 255 }).notNull(),
+  method: varchar('method', { length: 10 }).notNull(),
+  statusCode: integer('status_code').notNull(),
+  responseTimeMs: integer('response_time_ms'),
+  creditsUsed: integer('credits_used').notNull().default(1),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  requestBody: text('request_body'), // Stored for debugging (sanitized)
+  errorMessage: text('error_message'),
+  calledAt: timestamp('called_at', { mode: 'date' }).notNull().defaultNow(),
+})
+
+// Credit purchase transactions
+export const creditPurchases = pgTable('credit_purchases', {
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
+  credits: integer('credits').notNull(),
+  amountPaid: integer('amount_paid').notNull(), // in cents
+  bundleType: varchar('bundle_type', { length: 50 }), // 'small', 'medium', 'large', or 'custom'
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, completed, failed
+  purchasedAt: timestamp('purchased_at', { mode: 'date' }).notNull().defaultNow(),
+  ...timestampColumns,
+})
+
 // Relations
 export const subscriptionsRelations = relations(subscriptions, ({ one, many }) => ({
   tenant: one(tenants, {
@@ -131,6 +187,28 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
   }),
 }))
 
+// API Credits relations
+export const apiCreditsRelations = relations(apiCredits, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [apiCredits.tenantId],
+    references: [tenants.id],
+  }),
+}))
+
+export const apiCallLogsRelations = relations(apiCallLogs, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [apiCallLogs.tenantId],
+    references: [tenants.id],
+  }),
+}))
+
+export const creditPurchasesRelations = relations(creditPurchases, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [creditPurchases.tenantId],
+    references: [tenants.id],
+  }),
+}))
+
 // Types
 export type Subscription = typeof subscriptions.$inferSelect
 export type NewSubscription = typeof subscriptions.$inferInsert
@@ -140,3 +218,9 @@ export type Invoice = typeof invoices.$inferSelect
 export type NewInvoice = typeof invoices.$inferInsert
 export type UsageRecord = typeof usageRecords.$inferSelect
 export type NewUsageRecord = typeof usageRecords.$inferInsert
+export type ApiCredits = typeof apiCredits.$inferSelect
+export type NewApiCredits = typeof apiCredits.$inferInsert
+export type ApiCallLog = typeof apiCallLogs.$inferSelect
+export type NewApiCallLog = typeof apiCallLogs.$inferInsert
+export type CreditPurchase = typeof creditPurchases.$inferSelect
+export type NewCreditPurchase = typeof creditPurchases.$inferInsert

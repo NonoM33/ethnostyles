@@ -12,7 +12,7 @@ COPY packages/email/package.json packages/email/
 COPY packages/shared/package.json packages/shared/
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source code
 COPY apps/api apps/api

@@ -15,6 +15,7 @@ RUN bun install
 # Copy source code
 COPY apps/web apps/web
 COPY packages packages
+COPY tooling tooling
 COPY tsconfig.json ./
 
 # Build arguments for env vars
@@ -24,9 +25,9 @@ ARG VITE_STRIPE_PUBLISHABLE_KEY
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 
-# Build
+# Build (skip tsc for Docker builds, type checking done in CI)
 WORKDIR /app/apps/web
-RUN bun run build
+RUN bunx vite build
 
 # Production stage - nginx to serve static files
 FROM nginx:alpine

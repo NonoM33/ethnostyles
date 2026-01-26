@@ -3,8 +3,8 @@ FROM oven/bun:1.2 AS builder
 
 WORKDIR /app
 
-# Cache bust to force rebuild - v2
-ARG CACHE_BUST=2
+# Cache bust to force rebuild - v3
+ARG CACHE_BUST=3
 
 # Copy package files
 COPY package.json bun.lock ./

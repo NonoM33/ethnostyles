@@ -26,9 +26,9 @@ CREATE TABLE "team_invitations" (
 	"completed_at" timestamp
 );
 --> statement-breakpoint
-ALTER TABLE "campaigns" ALTER COLUMN "export_schedule" SET DATA TYPE varchar(20);--> statement-breakpoint
-ALTER TABLE "campaigns" ALTER COLUMN "export_format" SET DATA TYPE varchar(10);--> statement-breakpoint
-ALTER TABLE "campaigns" ADD COLUMN "campaign_type" varchar(20) DEFAULT 'other';--> statement-breakpoint
+ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "export_schedule" varchar(20);--> statement-breakpoint
+ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "export_format" varchar(10);--> statement-breakpoint
+ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "campaign_type" varchar(20) DEFAULT 'other';--> statement-breakpoint
 ALTER TABLE "campaigns" ADD COLUMN "team_name" varchar(255);--> statement-breakpoint
 ALTER TABLE "campaigns" ADD COLUMN "department" varchar(255);--> statement-breakpoint
 ALTER TABLE "campaigns" ADD COLUMN "manager_id" uuid;--> statement-breakpoint

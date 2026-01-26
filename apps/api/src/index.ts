@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { swagger } from '@elysiajs/swagger'
+import { runMigrations } from '@etnostyles/db'
 import { authRoutes } from './routes/auth'
 import { teamRoutes } from './routes/team'
 import { campaignRoutes } from './routes/campaigns'
@@ -13,6 +14,9 @@ import { teamsRoutes } from './routes/teams'
 import { analyticsRoutes } from './routes/analytics'
 import { billingRoutes } from './routes/billing'
 import { mcpRoutes } from './routes/mcp'
+
+// Run migrations on startup
+await runMigrations()
 
 const app = new Elysia()
   .use(cors({

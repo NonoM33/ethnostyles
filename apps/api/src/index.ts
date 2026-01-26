@@ -98,64 +98,6 @@ All responses are JSON with consistent error format:
       summary: 'Health check'
     }
   })
-  .get('/debug/info', async () => {
-    const fs = await import('fs/promises')
-    const migrationsFolder = '/app/packages/db/drizzle'
-    let migrationFiles: string[] = []
-    let migrationFolderExists = false
-
-    try {
-      migrationFiles = await fs.readdir(migrationsFolder)
-      migrationFolderExists = true
-    } catch {
-      migrationFolderExists = false
-    }
-
-    return {
-      nodeEnv: process.env['NODE_ENV'],
-      databaseUrlSet: !!process.env['DATABASE_URL'],
-      migrationsFolder,
-      migrationFolderExists,
-      migrationFiles,
-      timestamp: new Date().toISOString()
-    }
-  })
-  .get('/debug/test', () => ({ test: 'ok' }))
-  .get('/debug/db', async () => {
-    const { db, sql } = await import('@etnostyles/db')
-    try {
-      // Try to list tables
-      const result = await db.execute(sql`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-        ORDER BY table_name
-      `)
-      return { success: true, tables: result }
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }
-    }
-  })
-  .get('/debug/migrate', async () => {
-    console.log('Starting manual migration run...')
-    try {
-      // Import dynamically to catch any module loading errors
-      const { runMigrations: migrate } = await import('@etnostyles/db')
-      await migrate()
-      console.log('Manual migration completed successfully')
-      return { success: true, message: 'Migrations completed successfully' }
-    } catch (error) {
-      console.error('Manual migration failed:', error)
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      }
-    }
-  })
   .use(authRoutes)
   .use(teamRoutes)
   .use(campaignRoutes)

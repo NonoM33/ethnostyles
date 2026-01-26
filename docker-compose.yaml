@@ -38,8 +38,7 @@ services:
     expose:
       - "3000"
     labels:
-      - "traefik.http.services.api.loadbalancer.server.port=3000"
-      - "traefik.http.routers.api.service=api"
+      - "traefik.http.services.http-0-${COOLIFY_RESOURCE_UUID:-default}-api.loadbalancer.server.port=3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s

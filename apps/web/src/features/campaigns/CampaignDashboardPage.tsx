@@ -57,11 +57,16 @@ export function CampaignDashboardPage() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showInsights, setShowInsights] = useState(true)
 
-  const { data: stats, isLoading: statsLoading } = useDashboardCampaignStats(id, {
+  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardCampaignStats(id, {
     startDate: dateFilter.startDate || undefined,
     endDate: dateFilter.endDate || undefined,
     includeBenchmark: showBenchmark,
   })
+
+  // Debug: log any errors
+  if (statsError) {
+    console.error('Dashboard stats error:', statsError)
+  }
 
   const { data: responsesData } = useCampaignResponses(id, currentPage, 10)
   const responses = responsesData?.responses || []
@@ -162,7 +167,7 @@ export function CampaignDashboardPage() {
     return <SkeletonPage />
   }
 
-  if (!stats) {
+  if (!stats || statsError) {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -170,7 +175,12 @@ export function CampaignDashboardPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-gray-500 mb-4">Campagne non trouvée</p>
+        <p className="text-gray-500 mb-2">Campagne non trouvée</p>
+        {statsError && (
+          <p className="text-sm text-red-500 mb-4">
+            {statsError instanceof Error ? statsError.message : 'Erreur inconnue'}
+          </p>
+        )}
         <Link to="/campaigns" className="text-indigo-600 hover:text-indigo-700 font-medium">
           Retour aux campagnes
         </Link>

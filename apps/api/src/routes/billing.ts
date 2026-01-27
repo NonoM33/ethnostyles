@@ -53,6 +53,46 @@ const stripe = new Stripe(process.env['STRIPE_SECRET_KEY'] || '', {
 
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || ''
 
+// Helper to sync payment methods from Stripe
+async function syncPaymentMethods(customerId: string, tenantId: string) {
+  const stripePaymentMethods = await stripe.paymentMethods.list({
+    customer: customerId,
+    type: 'card',
+  })
+
+  // Get default payment method
+  const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
+  const defaultPmId = typeof customer.invoice_settings?.default_payment_method === 'string'
+    ? customer.invoice_settings.default_payment_method
+    : customer.invoice_settings?.default_payment_method?.id
+
+  for (const pm of stripePaymentMethods.data) {
+    if (pm.card) {
+      await db.insert(paymentMethods).values({
+        id: pm.id,
+        tenantId,
+        stripeCustomerId: customerId,
+        type: 'card',
+        cardBrand: pm.card.brand,
+        cardLast4: pm.card.last4,
+        cardExpMonth: pm.card.exp_month,
+        cardExpYear: pm.card.exp_year,
+        isDefault: pm.id === defaultPmId,
+      }).onConflictDoUpdate({
+        target: paymentMethods.id,
+        set: {
+          cardBrand: pm.card.brand,
+          cardLast4: pm.card.last4,
+          cardExpMonth: pm.card.exp_month,
+          cardExpYear: pm.card.exp_year,
+          isDefault: pm.id === defaultPmId,
+          updatedAt: new Date(),
+        },
+      })
+    }
+  }
+}
+
 // Helper to get or create Stripe customer
 async function getOrCreateStripeCustomer(tenantId: string, email: string, name?: string) {
   // Check if customer already exists
@@ -355,7 +395,75 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     },
   })
 
-  // Update seats
+  // Preview seats change - calculates prorated amount locally
+  .post('/preview-seats', async ({ headers, body, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    const { seats } = body as { seats: number }
+
+    const subscription = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.tenantId, user.tenantId),
+    })
+
+    if (!subscription || subscription.planId === 'free') {
+      set.status = 400
+      return { error: 'NO_SUBSCRIPTION', message: 'No active subscription' }
+    }
+
+    const plan = PLANS[subscription.planId]
+    const currentSeats = subscription.seatsExtra
+    const seatsChange = seats - currentSeats
+
+    if (seatsChange === 0) {
+      return {
+        currentSeats,
+        newSeats: seats,
+        seatsChange: 0,
+        prorationAmount: 0,
+        prorationAmountFormatted: '0.00€',
+        monthlyChange: 0,
+        monthlyChangeFormatted: '0.00€',
+        immediateCharge: false,
+      }
+    }
+
+    // Calculate days remaining in billing period
+    const now = new Date()
+    const periodEnd = subscription.currentPeriodEnd
+    const daysRemaining = Math.max(1, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    const daysInPeriod = 30 // Approximate
+
+    // Calculate prorated amount (in cents)
+    const prorationAmount = Math.round((plan.pricePerSeat * seatsChange * daysRemaining) / daysInPeriod)
+    const monthlyChange = plan.pricePerSeat * seatsChange
+
+    return {
+      currentSeats,
+      newSeats: seats,
+      seatsChange,
+      prorationAmount, // Can be negative (credit) or positive (charge)
+      prorationAmountFormatted: (prorationAmount / 100).toFixed(2) + '€',
+      monthlyChange,
+      monthlyChangeFormatted: (monthlyChange / 100).toFixed(2) + '€',
+      immediateCharge: prorationAmount > 0,
+      daysRemaining,
+    }
+  }, {
+    body: t.Object({
+      seats: t.Number(),
+    }),
+    detail: {
+      tags: ['Billing'],
+      summary: 'Preview seats change',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+  // Update seats - modifies subscription with immediate proration
   .post('/update-seats', async ({ headers, body, set }) => {
     const user = await getCurrentUser(headers['authorization'])
     if (!user) {
@@ -377,42 +485,75 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
       throw new Error('No active subscription')
     }
 
-    // Update in Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.id)
     const plan = PLANS[subscription.planId]
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.id)
+    const currentSeats = subscription.seatsExtra
 
-    // Find or create seat item
+    // Find existing seat item
     const seatItem = stripeSubscription.items.data.find(
       (item) => item.price?.metadata?.type === 'seat'
     )
 
-    if (seats > 0) {
-      if (seatItem) {
-        await stripe.subscriptionItems.update(seatItem.id, { quantity: seats })
-      } else {
-        await stripe.subscriptionItems.create({
-          subscription: subscription.id,
-          price_data: {
-            currency: 'eur',
-            product_data: { name: 'Places supplementaires' },
-            unit_amount: plan.pricePerSeat,
-            recurring: { interval: 'month' },
+    try {
+      if (seats === 0 && seatItem) {
+        // Remove seats entirely
+        await stripe.subscriptions.update(subscription.id, {
+          items: [{ id: seatItem.id, deleted: true }],
+          proration_behavior: 'create_prorations',
+        })
+      } else if (seatItem) {
+        // Update existing seat item
+        await stripe.subscriptionItems.update(seatItem.id, {
+          quantity: seats,
+          proration_behavior: seats > currentSeats ? 'always_invoice' : 'create_prorations',
+          payment_behavior: seats > currentSeats ? 'error_if_incomplete' : 'allow_incomplete',
+        })
+      } else if (seats > 0) {
+        // Create new seat item - first create a price
+        const price = await stripe.prices.create({
+          currency: 'eur',
+          unit_amount: plan.pricePerSeat,
+          recurring: { interval: 'month' },
+          product_data: {
+            name: 'Places supplementaires',
             metadata: { type: 'seat' },
           },
+          metadata: { type: 'seat' },
+        })
+
+        // Add to subscription with immediate invoice
+        await stripe.subscriptionItems.create({
+          subscription: subscription.id,
+          price: price.id,
           quantity: seats,
+          proration_behavior: 'always_invoice',
+          payment_behavior: 'error_if_incomplete',
         })
       }
-    } else if (seatItem) {
-      await stripe.subscriptionItems.del(seatItem.id)
+
+      // Update local DB
+      await db
+        .update(subscriptions)
+        .set({ seatsExtra: seats, updatedAt: new Date() })
+        .where(eq(subscriptions.id, subscription.id))
+
+      return {
+        success: true,
+        message: seats > currentSeats
+          ? 'Places ajoutees et facturees avec succes'
+          : 'Places mises a jour avec succes',
+      }
+    } catch (error: any) {
+      // Handle payment failure
+      if (error.type === 'StripeCardError' || error.code === 'payment_intent_authentication_failure') {
+        set.status = 402
+        return {
+          error: 'PAYMENT_FAILED',
+          message: 'Le paiement a echoue. Veuillez verifier votre moyen de paiement.',
+        }
+      }
+      throw error
     }
-
-    // Update local DB
-    await db
-      .update(subscriptions)
-      .set({ seatsExtra: seats, updatedAt: new Date() })
-      .where(eq(subscriptions.id, subscription.id))
-
-    return { success: true }
   }, {
     body: t.Object({
       seats: t.Number(),
@@ -509,6 +650,113 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     detail: {
       tags: ['Billing'],
       summary: 'Reactivate canceled subscription',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+  // Sync subscription from Stripe (called after checkout success)
+  .post('/sync', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    // Find existing subscription to get customer ID
+    const existingSub = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.tenantId, user.tenantId),
+    })
+
+    // If we have a customer ID, fetch their subscriptions from Stripe
+    if (existingSub?.stripeCustomerId) {
+      const stripeSubscriptions = await stripe.subscriptions.list({
+        customer: existingSub.stripeCustomerId,
+        status: 'active',
+        limit: 1,
+      })
+
+      if (stripeSubscriptions.data.length > 0) {
+        const stripeSub = stripeSubscriptions.data[0]
+        const planId = (stripeSub.metadata?.planId || 'pro') as PlanId
+        const plan = PLANS[planId]
+
+        await db
+          .update(subscriptions)
+          .set({
+            id: stripeSub.id,
+            planId,
+            status: 'active',
+            currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+            currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+            cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+            seatsIncluded: plan.limits.teamMembers || 999,
+            updatedAt: new Date(),
+          })
+          .where(eq(subscriptions.tenantId, user.tenantId))
+
+        // Sync payment methods
+        await syncPaymentMethods(existingSub.stripeCustomerId, user.tenantId)
+
+        return { subscription: { planId, status: 'active' } }
+      }
+    }
+
+    // Try to find customer by email and sync
+    const customers = await stripe.customers.list({
+      email: user.email,
+      limit: 1,
+    })
+
+    if (customers.data.length > 0) {
+      const customer = customers.data[0]
+      const stripeSubscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'active',
+        limit: 1,
+      })
+
+      if (stripeSubscriptions.data.length > 0) {
+        const stripeSub = stripeSubscriptions.data[0]
+        const planId = (stripeSub.metadata?.planId || 'pro') as PlanId
+        const plan = PLANS[planId]
+        const extraSeats = parseInt(stripeSub.metadata?.extraSeats || '0')
+
+        // Upsert subscription
+        await db.insert(subscriptions).values({
+          id: stripeSub.id,
+          tenantId: user.tenantId,
+          stripeCustomerId: customer.id,
+          planId,
+          status: 'active',
+          currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+          currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+          cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+          seatsIncluded: plan.limits.teamMembers || 999,
+          seatsExtra: extraSeats,
+        }).onConflictDoUpdate({
+          target: subscriptions.id,
+          set: {
+            planId,
+            status: 'active',
+            currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+            currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+            cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+            updatedAt: new Date(),
+          },
+        })
+
+        // Sync payment methods
+        await syncPaymentMethods(customer.id, user.tenantId)
+
+        return { subscription: { planId, status: 'active' } }
+      }
+    }
+
+    return { subscription: null }
+  }, {
+    detail: {
+      tags: ['Billing'],
+      summary: 'Sync subscription from Stripe after checkout',
       security: [{ bearerAuth: [] }],
     },
   })
@@ -971,6 +1219,86 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     detail: {
       tags: ['Billing'],
       summary: 'Get API call logs',
+      security: [{ bearerAuth: [] }],
+    },
+  })
+
+// Simple API usage endpoint for frontend
+  .get('/api-usage', async ({ headers, set }) => {
+    const user = await getCurrentUser(headers['authorization'])
+    if (!user) {
+      set.status = 401
+      return { error: 'UNAUTHORIZED', message: 'Not authenticated' }
+    }
+
+    // Get or create credits record
+    const weekStart = getWeekStart()
+    let [credits] = await db
+      .select()
+      .from(apiCredits)
+      .where(eq(apiCredits.tenantId, user.tenantId))
+      .limit(1)
+
+    if (!credits) {
+      await db.insert(apiCredits).values({
+        tenantId: user.tenantId,
+        balance: 0,
+        weeklyUsed: 0,
+        weekStartsAt: weekStart,
+        totalPurchased: 0,
+        totalUsed: 0,
+      })
+      credits = {
+        id: 'new',
+        tenantId: user.tenantId,
+        balance: 0,
+        weeklyUsed: 0,
+        weekStartsAt: weekStart,
+        totalPurchased: 0,
+        totalUsed: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    } else if (credits.weekStartsAt < weekStart) {
+      await db
+        .update(apiCredits)
+        .set({ weeklyUsed: 0, weekStartsAt: weekStart })
+        .where(eq(apiCredits.id, credits.id))
+      credits = { ...credits, weeklyUsed: 0, weekStartsAt: weekStart }
+    }
+
+    // Get plan limits
+    const subscription = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.tenantId, user.tenantId),
+    })
+    const planId = subscription?.planId || 'free'
+    const plan = PLANS[planId]
+    const weeklyLimit = plan.limits.apiCallsPerWeek || 0
+    const apiEnabled = plan.limits.apiEnabled || false
+
+    // Count recent calls
+    const [countResult] = await db
+      .select({ count: count() })
+      .from(apiCallLogs)
+      .where(eq(apiCallLogs.tenantId, user.tenantId))
+
+    return {
+      credits: {
+        balance: credits.balance,
+        weeklyUsed: credits.weeklyUsed,
+        weeklyLimit,
+        weeklyRemaining: Math.max(0, weeklyLimit - credits.weeklyUsed),
+        totalPurchased: credits.totalPurchased,
+        totalUsed: credits.totalUsed,
+        weekResetsAt: weekStart.getTime() + 7 * 24 * 60 * 60 * 1000,
+      },
+      apiEnabled,
+      recentCallsCount: countResult?.count || 0,
+    }
+  }, {
+    detail: {
+      tags: ['Billing'],
+      summary: 'Get API usage (simplified)',
       security: [{ bearerAuth: [] }],
     },
   })

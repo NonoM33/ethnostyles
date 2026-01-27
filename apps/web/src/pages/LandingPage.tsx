@@ -3,16 +3,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Les 8 Îles-Cultures françaises (étude Laurent Benarbia, nov 2022)
+// Les 8 profils culturels (étude Laurent Benarbia, nov 2022 - 2023 Français)
+// Noms simplifiés pour la landing page + noms scientifiques entre parenthèses
 const ILES_CULTURES = [
-  { name: 'Incertitudes face à l\'avenir', color: '#6B7280', emoji: '🌫️', description: 'Fragilité et aspiration au bonheur', poids: '19%' },
-  { name: 'Primauté du clan', color: '#EC4899', emoji: '👨‍👩‍👧‍👦', description: 'La famille comme refuge et valeur centrale', poids: '18,4%' },
-  { name: 'Réconciliation homme/nature', color: '#10B981', emoji: '🌿', description: 'Engagement écologique et solidarité', poids: '13,8%' },
-  { name: 'Mythe du contrat social', color: '#8B5CF6', emoji: '⚖️', description: 'Autonomie et valeurs humanistes', poids: '11,4%' },
-  { name: 'Mythe du progrès technique', color: '#3B82F6', emoji: '🔬', description: 'Innovation, science et modernité', poids: '11,1%' },
-  { name: 'Culte de la consommation', color: '#F59E0B', emoji: '💎', description: 'Réussite individuelle et prestige', poids: '10,9%' },
-  { name: 'Quête du plaisir', color: '#EF4444', emoji: '🎉', description: 'Hédonisme et épicurisme', poids: '7,9%' },
-  { name: 'Tradition sacrée', color: '#7C3AED', emoji: '🏛️', description: 'Conservatisme et héritage culturel', poids: '7,6%' },
+  { name: 'Les Prudents', scientificName: 'Incertitudes face à l\'avenir', color: '#6B7280', emoji: '🌫️', description: 'Cherchent la sécurité et la stabilité', poids: '19%' },
+  { name: 'Les Protecteurs', scientificName: 'Primauté du clan', color: '#EC4899', emoji: '👨‍👩‍👧‍👦', description: 'La famille et l\'équipe avant tout', poids: '18,4%' },
+  { name: 'Les Engagés', scientificName: 'Réconciliation homme/nature', color: '#10B981', emoji: '🌿', description: 'Portés par les valeurs et l\'impact', poids: '13,8%' },
+  { name: 'Les Équilibristes', scientificName: 'Mythe du contrat social', color: '#8B5CF6', emoji: '⚖️', description: 'Justice, autonomie et consensus', poids: '11,4%' },
+  { name: 'Les Innovateurs', scientificName: 'Mythe du progrès technique', color: '#3B82F6', emoji: '🔬', description: 'Veulent tester, innover, avancer', poids: '11,1%' },
+  { name: 'Les Ambitieux', scientificName: 'Culte de la consommation', color: '#F59E0B', emoji: '💎', description: 'Résultats, performance, reconnaissance', poids: '10,9%' },
+  { name: 'Les Enthousiastes', scientificName: 'Quête du plaisir', color: '#EF4444', emoji: '🎉', description: 'Énergie, convivialité, spontanéité', poids: '7,9%' },
+  { name: 'Les Gardiens', scientificName: 'Tradition sacrée', color: '#7C3AED', emoji: '🏛️', description: 'Respect des process et de l\'histoire', poids: '7,6%' },
 ]
 
 // Cas concrets d'utilisation par type de collaborateur
@@ -21,7 +22,7 @@ const USE_CASES = [
     role: 'Manager',
     emoji: '👔',
     problem: 'Vos réunions d\'équipe tournent au dialogue de sourds ?',
-    solution: 'Un "Mythe du progrès" veut avancer vite avec des données, tandis qu\'un "Primauté du clan" cherche d\'abord le consensus familial.',
+    solution: 'Un Innovateur 🔬 veut avancer vite avec des données, tandis qu\'un Protecteur 👨‍👩‍👧‍👦 cherche d\'abord le consensus.',
     action: 'Adaptez votre animation : commencez par créer du lien, puis présentez les faits.',
     result: '+35% d\'idées exploitables en réunion',
     color: 'from-blue-500 to-indigo-600',
@@ -30,8 +31,8 @@ const USE_CASES = [
     role: 'DRH / Recruteur',
     emoji: '🎯',
     problem: 'Vos nouvelles recrues partent avant 1 an ?',
-    solution: 'Un "Quête du plaisir" dans une équipe "Tradition sacrée" va vite se sentir bridé et partir.',
-    action: 'Créez des onboardings personnalisés selon l\'île-culture de chaque nouvel arrivant.',
+    solution: 'Un Enthousiaste 🎉 dans une équipe de Gardiens 🏛️ va vite se sentir bridé et partir.',
+    action: 'Créez des onboardings personnalisés selon le profil de chaque nouvel arrivant.',
     result: '+40% de rétention à 12 mois',
     color: 'from-emerald-500 to-teal-600',
   },
@@ -39,7 +40,7 @@ const USE_CASES = [
     role: 'Chef de projet',
     emoji: '📋',
     problem: 'Vos deadlines explosent malgré une équipe compétente ?',
-    solution: 'Les "Culte de la consommation" veulent des résultats rapides, les "Contrat social" veulent comprendre le pourquoi.',
+    solution: 'Les Ambitieux 💎 veulent des résultats rapides, les Équilibristes ⚖️ veulent comprendre le pourquoi.',
     action: 'Clarifiez les rôles : donnez du sens aux uns, des objectifs chiffrés aux autres.',
     result: '-25% de délais dépassés',
     color: 'from-amber-500 to-orange-600',
@@ -48,8 +49,8 @@ const USE_CASES = [
     role: 'Dirigeant / CEO',
     emoji: '🏢',
     problem: 'Votre transformation digitale patine ?',
-    solution: 'Si votre CODIR est à 80% "Tradition sacrée", normal que l\'innovation bloque.',
-    action: 'Intégrez des profils "Mythe du progrès" et "Réconciliation homme/nature" pour le changement.',
+    solution: 'Si votre CODIR est à 80% Gardiens 🏛️, normal que l\'innovation bloque.',
+    action: 'Intégrez des Innovateurs 🔬 et des Engagés 🌿 pour accélérer le changement.',
     result: '2x plus vite sur les projets de transformation',
     color: 'from-purple-500 to-pink-600',
   },
@@ -60,9 +61,9 @@ const FEATURE_DEMOS = [
   {
     id: 'onboarding',
     title: 'Onboarding personnalisé',
-    subtitle: 'Chaque collaborateur reçoit un parcours adapté à son île-culture',
+    subtitle: 'Chaque collaborateur reçoit un parcours adapté à son profil',
     mockup: {
-      profile: 'Quête du plaisir',
+      profile: 'Enthousiaste',
       emoji: '🎉',
       color: '#EF4444',
       recommendations: [
@@ -76,16 +77,16 @@ const FEATURE_DEMOS = [
   {
     id: 'team-view',
     title: 'Vue équipe instantanée',
-    subtitle: 'Visualisez la composition culturelle de votre équipe en un coup d\'œil',
+    subtitle: 'Visualisez la composition de votre équipe en un coup d\'œil',
     mockup: {
       teamName: 'Équipe Produit',
       members: [
-        { name: 'Alice', profile: 'Mythe du progrès', emoji: '🔬', color: '#3B82F6' },
-        { name: 'Bruno', profile: 'Primauté du clan', emoji: '👨‍👩‍👧‍👦', color: '#EC4899' },
-        { name: 'Clara', profile: 'Culte conso', emoji: '💎', color: '#F59E0B' },
-        { name: 'David', profile: 'Contrat social', emoji: '⚖️', color: '#8B5CF6' },
+        { name: 'Alice', profile: 'Innovateur', emoji: '🔬', color: '#3B82F6' },
+        { name: 'Bruno', profile: 'Protecteur', emoji: '👨‍👩‍👧‍👦', color: '#EC4899' },
+        { name: 'Clara', profile: 'Ambitieux', emoji: '💎', color: '#F59E0B' },
+        { name: 'David', profile: 'Équilibriste', emoji: '⚖️', color: '#8B5CF6' },
       ],
-      insight: 'Équipe diversifiée - Attention aux tensions progrès/tradition sur les méthodes',
+      insight: 'Équipe diversifiée - Attention aux tensions innovation/tradition',
     },
   },
   {
@@ -93,13 +94,13 @@ const FEATURE_DEMOS = [
     title: 'Conseils management',
     subtitle: 'Recevez des recommandations concrètes pour manager chaque profil',
     mockup: {
-      profile: 'Primauté du clan',
+      profile: 'Protecteur',
       emoji: '👨‍👩‍👧‍👦',
       color: '#EC4899',
       tips: [
         { do: true, text: 'Valorisez l\'esprit d\'équipe et la convivialité' },
         { do: true, text: 'Respectez l\'équilibre vie pro/vie perso' },
-        { do: false, text: 'Ne bousculez pas les traditions établies' },
+        { do: false, text: 'Ne bousculez pas les habitudes établies' },
         { do: false, text: 'Évitez les changements trop rapides' },
       ],
     },
@@ -117,28 +118,28 @@ const CONCRETE_SCENARIOS = [
   {
     title: 'Réunion qui tourne en rond',
     before: 'Tout le monde parle en même temps, personne ne s\'écoute, aucune décision ne sort.',
-    insight: '3 "Culte de la consommation" veulent des résultats rapides, 2 "Contrat social" veulent débattre.',
+    insight: '3 Ambitieux 💎 veulent des résultats rapides, 2 Équilibristes ⚖️ veulent débattre.',
     after: 'Structurez : 10 min de débat libre, puis prise de décision avec des critères objectifs.',
     emoji: '🗣️',
   },
   {
     title: 'Nouveau collaborateur isolé',
     before: 'Marie, arrivée il y a 3 mois, déjeune seule et ne participe pas aux discussions.',
-    insight: 'Marie est "Tradition sacrée", entourée de "Quête du plaisir" très sociables.',
+    insight: 'Marie est Gardienne 🏛️, entourée d\'Enthousiastes 🎉 très sociables.',
     after: 'Proposez-lui des activités en petit comité, respectez son besoin de repères stables.',
     emoji: '👤',
   },
   {
     title: 'Projet en retard chronique',
     before: 'L\'équipe est motivée mais le projet accumule du retard à chaque sprint.',
-    insight: '4 "Réconciliation homme/nature" qui débattent des impacts, 0 "Mythe du progrès" pour exécuter.',
+    insight: '4 Engagés 🌿 qui débattent des impacts, 0 Innovateur 🔬 pour exécuter.',
     after: 'Intégrez un profil orienté résultats pour structurer et tenir les délais.',
     emoji: '⏰',
   },
   {
     title: 'Conflit entre 2 collaborateurs',
     before: 'Paul et Julie ne peuvent plus travailler ensemble depuis le dernier projet.',
-    insight: 'Paul ("Mythe du progrès") veut innover vite, Julie ("Primauté du clan") protège l\'équipe.',
+    insight: 'Paul (Innovateur 🔬) veut avancer vite, Julie (Protectrice 👨‍👩‍👧‍👦) protège l\'équipe.',
     after: 'Paul propose les innovations, Julie s\'assure que l\'équipe suit. Rôles complémentaires.',
     emoji: '⚡',
   },
@@ -148,85 +149,176 @@ const PRICING = [
   {
     name: 'Starter',
     price: 'Gratuit',
-    description: 'Pour tester sur votre équipe',
-    features: ['1 campagne', '20 collaborateurs max', 'Profils individuels', 'Export CSV'],
+    description: 'Testez sur votre équipe',
+    limit: 'Jusqu\'à 20 personnes',
+    features: [
+      '1 campagne de test',
+      '20 collaborateurs max',
+      'Profils individuels complets',
+      'Export CSV des résultats',
+    ],
     cta: 'Commencer gratuitement',
     popular: false,
+    note: 'Sans carte bancaire',
   },
   {
     name: 'Pro',
     price: '49€',
     period: '/mois',
-    description: 'Pour les équipes ambitieuses',
+    description: 'Pour les équipes qui grandissent',
+    limit: 'Jusqu\'à 100 personnes',
     features: [
       'Campagnes illimitées',
-      'Collaborateurs illimités',
+      'Jusqu\'à 100 collaborateurs',
       'Vue équipe + analytics',
-      'Conseils management personnalisés',
-      'Benchmark sectoriel',
+      'Conseils management par profil',
+      'Benchmark vs votre secteur',
       'Export PDF & rapports',
-      'Support prioritaire',
+      'Support par email prioritaire',
     ],
     cta: 'Essai gratuit 14 jours',
     popular: true,
+    note: '14 jours d\'essai gratuit',
   },
   {
     name: 'Enterprise',
     price: 'Sur mesure',
     description: 'Grandes organisations',
+    limit: 'Collaborateurs illimités',
     features: [
       'Tout Pro inclus',
-      'Multi-équipes / BU',
-      'SSO / SAML',
-      'API dédiée',
-      'Formation managers',
+      'Multi-équipes / Business Units',
+      'SSO / SAML (Okta, Azure AD...)',
+      'API dédiée + webhooks',
+      'Formation managers incluse',
       'Account manager dédié',
     ],
     cta: 'Demander une démo',
     popular: false,
+    note: 'Devis sous 48h',
+  },
+]
+
+// Témoignages clients
+const TESTIMONIALS = [
+  {
+    name: 'Sophie Martin',
+    role: 'DRH',
+    company: 'Nexia Consulting',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
+    quote: 'On a divisé notre turnover par 2 en adaptant nos onboardings aux profils. Le ROI est évident.',
+    metric: '-52% turnover',
+  },
+  {
+    name: 'Thomas Durand',
+    role: 'CEO',
+    company: 'TechFlow',
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+    quote: 'Je comprends enfin pourquoi certaines équipes fonctionnent et d\'autres non. Indispensable.',
+    metric: '+40% cohésion',
+  },
+  {
+    name: 'Marie Lefebvre',
+    role: 'Manager',
+    company: 'Groupe Altitude',
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+    quote: 'Mes réunions sont passées de 2h de débat stérile à 45 min de décisions concrètes.',
+    metric: '-60% temps réunion',
   },
 ]
 
 const FAQ = [
   {
     question: 'Comment ça fonctionne concrètement ?',
-    answer: 'Vous créez une campagne, envoyez le lien à vos collaborateurs. Chacun répond à 24 questions en 8 minutes. Vous recevez instantanément le profil de chacun + une vue d\'ensemble de votre équipe avec des recommandations de management personnalisées.',
+    answer: 'Vous créez une campagne en 2 minutes, envoyez le lien à vos collaborateurs par email ou Slack. Chacun répond à 24 questions en 8 minutes. Vous recevez instantanément le profil de chacun + une vue d\'ensemble de votre équipe avec des recommandations de management personnalisées.',
+    icon: '🚀',
+    category: 'Démarrage',
   },
   {
-    question: 'Qu\'est-ce que ça change vraiment au quotidien ?',
-    answer: 'Vous comprenez enfin pourquoi certaines personnes fonctionnent bien ensemble et d\'autres non. Vous adaptez vos réunions, vos onboardings, vos affectations de projets. Résultat : moins de conflits, plus de cohésion, meilleure rétention.',
+    question: 'Et si mes collaborateurs refusent de répondre ?',
+    answer: 'Avec un taux de complétion de 94%, c\'est rare. Le secret : chaque participant reçoit son propre profil détaillé en retour. C\'est du gagnant-gagnant. Présentez-le comme un outil de développement personnel, pas d\'évaluation. Nous fournissons aussi des templates d\'email qui fonctionnent.',
+    icon: '🤔',
+    category: 'Adoption',
   },
   {
-    question: 'Est-ce que mes collaborateurs vont accepter de répondre ?',
-    answer: 'Avec un taux de complétion de 94%, c\'est notre meilleur score. Le questionnaire est engageant, pas intrusif. Chaque participant reçoit son propre profil en retour, ce qui les motive à participer.',
+    question: 'Quelle différence avec un test MBTI ou DISC ?',
+    answer: 'MBTI et DISC mesurent la personnalité individuelle. Ethnostyles mesure les valeurs culturelles profondes — ce qui motive vraiment les gens et comment ils interagissent en équipe. C\'est basé sur une étude ethnographique de 2023 Français, pas sur des typologies américaines des années 60.',
+    icon: '🔬',
+    category: 'Science',
+  },
+  {
+    question: 'Est-ce que ça fonctionne avec une équipe en remote ?',
+    answer: 'Parfaitement. Le questionnaire est 100% en ligne. La vue équipe est même plus utile en remote car vous n\'avez pas les signaux non-verbaux du présentiel. Plusieurs clients l\'utilisent pour leurs équipes distribuées sur plusieurs pays.',
+    icon: '🌍',
+    category: 'Remote',
+  },
+  {
+    question: 'Combien de temps avant de voir des résultats concrets ?',
+    answer: 'Premiers insights dès que 3-4 personnes ont répondu (souvent sous 24h). Vous pouvez commencer à adapter votre management immédiatement. Les gains mesurables (rétention, productivité) apparaissent généralement sous 2-3 mois.',
+    icon: '⏱️',
+    category: 'Résultats',
   },
   {
     question: 'Comment interpréter les résultats sans formation RH ?',
-    answer: 'Pas besoin d\'être expert. Chaque profil vient avec des conseils concrets et actionnables : "Pour ce collaborateur, faites X, évitez Y". On vous dit exactement quoi faire.',
+    answer: 'Pas besoin d\'être expert. Chaque profil vient avec des conseils concrets et actionnables : "Pour ce collaborateur, faites X, évitez Y". On vous dit exactement quoi faire, pas de jargon psy.',
+    icon: '📊',
+    category: 'Utilisation',
   },
   {
     question: 'Les données sont-elles confidentielles ?',
-    answer: 'Absolument. Hébergement en France, chiffrement, conformité RGPD. Chaque collaborateur peut demander l\'export ou la suppression de ses données. Vous décidez qui voit quoi.',
+    answer: 'Absolument. Hébergement en France (pas aux USA), chiffrement AES-256, conformité RGPD totale. Chaque collaborateur peut demander l\'export ou la suppression de ses données en 1 clic. Vous décidez qui voit quoi dans votre organisation.',
+    icon: '🔒',
+    category: 'Sécurité',
+  },
+  {
+    question: 'Puis-je tester sur moi-même d\'abord ?',
+    answer: 'Oui ! Créez une campagne gratuite et passez le questionnaire vous-même. Vous verrez votre propre profil et comprendrez exactement ce que vos collaborateurs recevront. C\'est la meilleure façon de vous convaincre.',
+    icon: '🎯',
+    category: 'Test',
   },
 ]
 
-function FAQItem({ question, answer, isOpen, onClick }: { question: string; answer: string; isOpen: boolean; onClick: () => void }) {
+function FAQItem({ question, answer, icon, category, isOpen, onClick }: { question: string; answer: string; icon: string; category: string; isOpen: boolean; onClick: () => void }) {
   return (
-    <div className="border-b border-gray-200">
+    <motion.div
+      className={`rounded-xl sm:rounded-2xl transition-all duration-300 ${
+        isOpen
+          ? 'bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg ring-1 ring-indigo-100'
+          : 'bg-white hover:bg-gray-50 shadow-sm'
+      }`}
+      layout
+    >
       <button
         onClick={onClick}
-        className="w-full py-6 flex items-center justify-between text-left"
+        className="w-full p-4 sm:p-6 flex items-start gap-3 sm:gap-4 text-left"
       >
-        <span className="text-lg font-medium text-gray-900">{question}</span>
-        <motion.svg
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 transition-colors ${
+          isOpen ? 'bg-indigo-100' : 'bg-gray-100'
+        }`}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full ${
+              isOpen ? 'bg-indigo-200 text-indigo-700' : 'bg-gray-200 text-gray-600'
+            }`}>
+              {category}
+            </span>
+          </div>
+          <span className={`text-sm sm:text-base lg:text-lg font-semibold block leading-snug ${isOpen ? 'text-indigo-900' : 'text-gray-900'}`}>
+            {question}
+          </span>
+        </div>
+        <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          className="w-5 h-5 text-gray-500 flex-shrink-0 ml-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+            isOpen ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'
+          }`}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </motion.svg>
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </motion.div>
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -234,14 +326,16 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <p className="pb-6 text-gray-600">{answer}</p>
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 pl-[3.25rem] sm:pl-[4.5rem]">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{answer}</p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }
 
@@ -412,8 +506,8 @@ export function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section - Valeur immédiate */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      {/* Hero Section - Simplifié et percutant */}
+      <section className="relative pt-32 pb-16 overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50" />
           <motion.div
@@ -435,18 +529,12 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* Hook ultra clair */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-200 mb-8">
-                <span className="text-red-600 font-semibold">Le problème :</span>
-                <span className="text-red-700">Vos équipes sont compétentes mais ne fonctionnent pas ensemble</span>
-              </div>
-
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                Comprenez enfin
+                En 8 minutes, comprenez
                 <br />
                 <span className="relative">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
-                    pourquoi ça coince
+                    pourquoi vos équipes
                   </span>
                   <motion.span
                     initial={{ scaleX: 0 }}
@@ -456,26 +544,26 @@ export function LandingPage() {
                   />
                 </span>
                 <br />
-                <span className="text-gray-900">dans vos équipes</span>
+                <span className="text-gray-900">ne fonctionnent pas ensemble</span>
               </h1>
 
               <p className="mt-8 text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Cartographiez le profil culturel de chaque collaborateur.
-                <br />
-                <span className="font-semibold text-gray-900">Adaptez votre management. Boostez la cohésion.</span>
+                Le questionnaire scientifique qui révèle les profils de vos collaborateurs — et comment les manager.
               </p>
 
-              {/* Promesse ultra concrète */}
-              <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm">
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full">
-                  <span>✓</span> Onboarding personnalisé par profil
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full">
-                  <span>✓</span> Conseils management concrets
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full">
-                  <span>✓</span> Résolution de conflits
-                </div>
+              {/* Stats en ligne */}
+              <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
+                <span className="flex items-center gap-2">
+                  <span className="text-indigo-600 font-bold">24</span> questions
+                </span>
+                <span className="text-gray-300">•</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-indigo-600 font-bold">94%</span> taux de complétion
+                </span>
+                <span className="text-gray-300">•</span>
+                <span className="flex items-center gap-2">
+                  Gratuit jusqu'à <span className="text-indigo-600 font-bold">20</span> personnes
+                </span>
               </div>
 
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -483,23 +571,47 @@ export function LandingPage() {
                   to="/register"
                   className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-all shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/30 hover:-translate-y-0.5"
                 >
-                  Tester sur mon équipe
+                  Créer ma première campagne
                   <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </Link>
                 <a
-                  href="#scenarios"
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 bg-white hover:bg-gray-50 rounded-xl transition-all border-2 border-gray-200 hover:border-gray-300"
+                  href="#demo-test"
+                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all border-2 border-indigo-200 hover:border-indigo-300"
                 >
-                  Voir des exemples concrets
+                  <span className="mr-2">🎯</span>
+                  Faire le test moi-même (2 min)
                 </a>
               </div>
 
               <p className="mt-6 text-sm text-gray-500">
-                Gratuit pour 20 collaborateurs • Résultats en 8 minutes • Pas de carte bancaire
+                Pas de carte bancaire requise • RGPD compliant • Support inclus
               </p>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mini-test CTA Section */}
+      <section id="demo-test" className="py-8 sm:py-12 bg-indigo-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+            <div className="text-center md:text-left">
+              <h3 className="text-xl sm:text-2xl font-bold text-white">
+                Curieux de découvrir votre propre profil ?
+              </h3>
+              <p className="mt-1 sm:mt-2 text-sm sm:text-base text-indigo-200">
+                Passez le mini-test en 2 minutes et recevez un aperçu de votre profil culturel.
+              </p>
+            </div>
+            <Link
+              to="/register"
+              className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-all shadow-lg whitespace-nowrap text-sm sm:text-base"
+            >
+              <span className="mr-2">🎯</span>
+              Faire le mini-test gratuit
+            </Link>
           </div>
         </div>
       </section>
@@ -522,6 +634,69 @@ export function LandingPage() {
                 <div className="mt-1 text-gray-600 text-sm">{stat.label}</div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Témoignages clients */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700 mb-4">
+                Ils utilisent Ethnostyles
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+                Ce qu'en disent nos clients
+              </h2>
+            </motion.div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            {TESTIMONIALS.map((testimonial, index) => (
+              <motion.div
+                key={testimonial.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                className="bg-white rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all"
+              >
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <img
+                    src={testimonial.image}
+                    alt={testimonial.name}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-indigo-100"
+                  />
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm sm:text-base">{testimonial.name}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{testimonial.role}, {testimonial.company}</div>
+                  </div>
+                </div>
+                <blockquote className="text-gray-700 mb-4 sm:mb-6 text-sm sm:text-base">
+                  "{testimonial.quote}"
+                </blockquote>
+                <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-green-50 text-green-700 rounded-full font-bold text-xs sm:text-sm">
+                  {testimonial.metric}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Logos entreprises */}
+          <div className="mt-12 pt-8 border-t border-gray-100">
+            <p className="text-center text-sm text-gray-500 mb-6">Ils nous font confiance</p>
+            <div className="flex flex-wrap justify-center items-center gap-8 opacity-50 grayscale">
+              <div className="text-2xl font-bold text-gray-400">Nexia</div>
+              <div className="text-2xl font-bold text-gray-400">TechFlow</div>
+              <div className="text-2xl font-bold text-gray-400">Altitude</div>
+              <div className="text-2xl font-bold text-gray-400">Synapse</div>
+              <div className="text-2xl font-bold text-gray-400">Horizon</div>
+            </div>
           </div>
         </div>
       </section>
@@ -647,40 +822,45 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Les 8 Îles-Cultures */}
-      <section className="py-20">
+      {/* Les 8 Profils Culturels */}
+      <section className="py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Les 8 Îles-Cultures françaises
+          <div className="text-center mb-10 sm:mb-12">
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-purple-100 text-purple-700 mb-4">
+              La science derrière Ethnostyles
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+              8 profils culturels, 8 façons de voir le monde
             </h2>
-            <p className="mt-4 text-lg text-gray-600">
-              Étude ethnographique sur 2023 Français - Chaque île-culture représente un système de croyances partagées
+            <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-4">
+              Basé sur une étude ethnographique de 2023 Français. Chaque profil représente un système de valeurs profondes.
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4">
+          {/* Grille responsive des profils */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {ILES_CULTURES.map((ile, index) => (
               <motion.div
                 key={ile.name}
-                initial={{ opacity: 0, scale: 0.5 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ scale: 1.1, y: -5 }}
-                className="group relative"
+                className="group"
               >
                 <div
-                  className="px-5 py-3 rounded-2xl text-white font-medium shadow-lg cursor-pointer transition-shadow hover:shadow-xl flex items-center gap-2"
+                  className="relative p-4 sm:p-5 rounded-2xl text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer"
                   style={{ backgroundColor: ile.color }}
                 >
-                  <span className="text-xl">{ile.emoji}</span>
-                  <span className="text-sm">{ile.name}</span>
-                </div>
-                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap text-center">
-                    <div className="font-bold">{ile.poids}</div>
-                    <div>{ile.description}</div>
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                    <span className="text-2xl sm:text-3xl">{ile.emoji}</span>
+                    <span className="font-bold text-sm sm:text-base leading-tight">{ile.name}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/80 leading-snug">
+                    {ile.description}
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-white/20">
+                    <span className="text-xs font-bold text-white/90">{ile.poids} des Français</span>
                   </div>
                 </div>
               </motion.div>
@@ -690,32 +870,33 @@ export function LandingPage() {
       </section>
 
       {/* Scénarios concrets - Before/After */}
-      <section id="scenarios" className="py-20 bg-gray-50">
+      <section id="scenarios" className="py-12 sm:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 sm:mb-16">
             <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-amber-100 text-amber-700 mb-4">
               Exemples réels
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
               Reconnaissez-vous ces situations ?
             </h2>
           </div>
 
           <div className="max-w-4xl mx-auto">
-            {/* Scenario selector */}
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {/* Scenario selector - scrollable on mobile */}
+            <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap sm:justify-center scrollbar-hide">
               {CONCRETE_SCENARIOS.map((scenario, index) => (
                 <button
                   key={index}
                   onClick={() => setActiveScenario(index)}
-                  className={`px-4 py-2 rounded-full font-medium transition-all ${
+                  className={`px-3 sm:px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap text-sm sm:text-base flex-shrink-0 ${
                     activeScenario === index
                       ? 'bg-indigo-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                   }`}
                 >
-                  <span className="mr-2">{scenario.emoji}</span>
-                  {scenario.title}
+                  <span className="mr-1 sm:mr-2">{scenario.emoji}</span>
+                  <span className="hidden sm:inline">{scenario.title}</span>
+                  <span className="sm:hidden">{scenario.title.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
@@ -727,32 +908,32 @@ export function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden"
+                className="bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden"
               >
-                <div className="p-8">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-3xl">
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-8">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-indigo-100 flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
                       {CONCRETE_SCENARIOS[activeScenario]!.emoji}
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                       {CONCRETE_SCENARIOS[activeScenario]!.title}
                     </h3>
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="p-5 bg-red-50 rounded-xl">
-                      <div className="text-red-600 font-bold text-sm mb-2">AVANT</div>
-                      <p className="text-red-800">{CONCRETE_SCENARIOS[activeScenario]!.before}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                    <div className="p-4 sm:p-5 bg-red-50 rounded-xl">
+                      <div className="text-red-600 font-bold text-xs sm:text-sm mb-1 sm:mb-2">AVANT</div>
+                      <p className="text-red-800 text-sm sm:text-base">{CONCRETE_SCENARIOS[activeScenario]!.before}</p>
                     </div>
 
-                    <div className="p-5 bg-indigo-50 rounded-xl">
-                      <div className="text-indigo-600 font-bold text-sm mb-2">DIAGNOSTIC ETHNOSTYLES</div>
-                      <p className="text-indigo-800">{CONCRETE_SCENARIOS[activeScenario]!.insight}</p>
+                    <div className="p-4 sm:p-5 bg-indigo-50 rounded-xl">
+                      <div className="text-indigo-600 font-bold text-xs sm:text-sm mb-1 sm:mb-2">DIAGNOSTIC</div>
+                      <p className="text-indigo-800 text-sm sm:text-base">{CONCRETE_SCENARIOS[activeScenario]!.insight}</p>
                     </div>
 
-                    <div className="p-5 bg-green-50 rounded-xl">
-                      <div className="text-green-600 font-bold text-sm mb-2">APRÈS</div>
-                      <p className="text-green-800">{CONCRETE_SCENARIOS[activeScenario]!.after}</p>
+                    <div className="p-4 sm:p-5 bg-green-50 rounded-xl">
+                      <div className="text-green-600 font-bold text-xs sm:text-sm mb-1 sm:mb-2">APRÈS</div>
+                      <p className="text-green-800 text-sm sm:text-base">{CONCRETE_SCENARIOS[activeScenario]!.after}</p>
                     </div>
                   </div>
                 </div>
@@ -771,8 +952,8 @@ export function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-16 left-[16%] right-[16%] h-1 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 relative">
+            <div className="hidden sm:block absolute top-16 left-[16%] right-[16%] h-1 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200" />
 
             {[
               { step: '1', title: 'Créez une campagne', description: 'Nommez votre équipe, personnalisez le message d\'invitation.', emoji: '🚀' },
@@ -785,20 +966,101 @@ export function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.15 }}
-                className="relative text-center"
+                className="relative text-center sm:text-center flex sm:flex-col items-center sm:items-center gap-4 sm:gap-0"
               >
-                <div className="relative inline-flex">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-4xl shadow-xl mb-6">
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-3xl sm:text-4xl shadow-xl sm:mb-6">
                     {item.emoji}
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-indigo-600">
+                  <div className="absolute -top-2 -right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-indigo-600 text-sm">
                     {item.step}
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
+                <div className="text-left sm:text-center">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-3">{item.title}</h3>
+                  <p className="text-sm sm:text-base text-gray-600">{item.description}</p>
+                </div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Coût de l'inaction - Urgence */}
+      <section className="py-12 sm:py-16 bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-red-100 text-red-700 mb-4">
+                Le coût de l'inaction
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+                Chaque mois sans agir vous coûte
+              </h2>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl p-5 sm:p-6 lg:p-8 text-center shadow-sm border border-red-100"
+            >
+              <div className="text-3xl sm:text-4xl font-bold text-red-600 mb-1 sm:mb-2">15 000€</div>
+              <div className="text-gray-600 text-sm sm:text-base">par départ évitable</div>
+              <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">Coût moyen de remplacement d'un collaborateur</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl p-5 sm:p-6 lg:p-8 text-center shadow-sm border border-orange-100"
+            >
+              <div className="text-3xl sm:text-4xl font-bold text-orange-600 mb-1 sm:mb-2">31h</div>
+              <div className="text-gray-600 text-sm sm:text-base">perdues par mois en conflits</div>
+              <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">Temps passé à gérer des tensions au lieu de produire</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-2xl p-5 sm:p-6 lg:p-8 text-center shadow-sm border border-amber-100"
+            >
+              <div className="text-3xl sm:text-4xl font-bold text-amber-600 mb-1 sm:mb-2">-23%</div>
+              <div className="text-gray-600 text-sm sm:text-base">de productivité</div>
+              <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">Perte de performance avec des tensions non résolues</p>
+            </motion.div>
+          </div>
+
+          <div className="mt-8 sm:mt-12 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-3 px-5 sm:px-6 py-4 sm:py-4 bg-white rounded-2xl shadow-lg border border-gray-100 max-w-xl sm:max-w-none sm:inline-flex mx-auto"
+            >
+              <span className="text-2xl hidden sm:block">💡</span>
+              <div className="text-center sm:text-left">
+                <div className="font-bold text-gray-900 text-sm sm:text-base">Premiers insights exploitables sous 24h</div>
+                <div className="text-xs sm:text-sm text-gray-500">Commencez à agir dès demain</div>
+              </div>
+              <Link
+                to="/register"
+                className="w-full sm:w-auto sm:ml-4 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors whitespace-nowrap text-sm sm:text-base"
+              >
+                Commencer maintenant
+              </Link>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -811,10 +1073,13 @@ export function LandingPage() {
               Tarifs simples
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">
-              Testez gratuitement
+              Tarifs simples et transparents
             </h2>
             <p className="mt-4 text-xl text-gray-600">
-              Commencez avec 20 collaborateurs, sans engagement
+              Commencez gratuitement, évoluez quand vous êtes prêt
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Une campagne = un questionnaire envoyé à une équipe. Relancez autant de fois que nécessaire.
             </p>
           </div>
 
@@ -857,6 +1122,11 @@ export function LandingPage() {
                   <p className={`mt-2 ${plan.popular ? 'text-indigo-100' : 'text-gray-500'}`}>
                     {plan.description}
                   </p>
+                  {plan.limit && (
+                    <p className={`mt-1 text-sm font-medium ${plan.popular ? 'text-indigo-200' : 'text-indigo-600'}`}>
+                      {plan.limit}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-4 mb-8">
@@ -887,6 +1157,11 @@ export function LandingPage() {
                 >
                   {plan.cta}
                 </Link>
+                {plan.note && (
+                  <p className={`mt-3 text-center text-sm ${plan.popular ? 'text-indigo-200' : 'text-gray-400'}`}>
+                    {plan.note}
+                  </p>
+                )}
               </motion.div>
             ))}
           </div>
@@ -894,25 +1169,65 @@ export function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Questions fréquentes
-            </h2>
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700 mb-4">
+                FAQ
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Vous avez des questions ?
+              </h2>
+              <p className="mt-4 text-lg text-gray-600">
+                Tout ce que vous devez savoir pour démarrer
+              </p>
+            </motion.div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="space-y-4">
             {FAQ.map((item, index) => (
-              <FAQItem
+              <motion.div
                 key={index}
-                question={item.question}
-                answer={item.answer}
-                isOpen={openFAQ === index}
-                onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <FAQItem
+                  question={item.question}
+                  answer={item.answer}
+                  icon={item.icon}
+                  category={item.category}
+                  isOpen={openFAQ === index}
+                  onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
+                />
+              </motion.div>
             ))}
           </div>
+
+          {/* CTA sous la FAQ */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 text-center"
+          >
+            <p className="text-gray-600 mb-4">Vous ne trouvez pas la réponse à votre question ?</p>
+            <a
+              href="mailto:contact@ethnostyles.fr"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Contactez-nous
+            </a>
+          </motion.div>
         </div>
       </section>
 
@@ -930,26 +1245,49 @@ export function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-              Prêt à comprendre votre équipe ?
+              Prêt à transformer votre équipe ?
             </h2>
-            <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-              Testez gratuitement sur 20 collaborateurs. Premiers résultats en 8 minutes.
+            <p className="text-xl text-white/80 mb-4 max-w-2xl mx-auto">
+              Créez votre première campagne en 2 minutes. Premiers insights sous 24h.
             </p>
+
+            {/* Récapitulatif des bénéfices */}
+            <div className="flex flex-wrap justify-center gap-4 mb-10 text-white/90">
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                20 collaborateurs gratuits
+              </span>
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Sans carte bancaire
+              </span>
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Support inclus
+              </span>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl transition-all shadow-xl hover:-translate-y-1"
+                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl transition-all shadow-xl hover:-translate-y-1"
               >
-                Démarrer gratuitement
-                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                Créer ma première campagne
+                <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
               <a
                 href="mailto:contact@ethnostyles.fr"
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border-2 border-white/30 hover:border-white/50 hover:bg-white/10 rounded-xl transition-all"
+                className="inline-flex items-center justify-center px-8 py-5 text-lg font-semibold text-white border-2 border-white/30 hover:border-white/50 hover:bg-white/10 rounded-xl transition-all"
               >
-                Nous contacter
+                Poser une question
               </a>
             </div>
             <p className="mt-6 text-white/60 text-sm">

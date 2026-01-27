@@ -195,15 +195,15 @@ export const dashboardRoutes = new Elysia({ prefix: '/dashboard' })
         return { error: 'NOT_FOUND', message: 'Campaign not found' }
       }
 
-      // Date filter
-      let dateFilter = sql`true`
+      // Build date filter conditions
+      const dateConditions = [eq(respondents.campaignId, params.id)]
       if (query.startDate) {
-        dateFilter = sql`${respondents.completedAt} >= ${new Date(query.startDate)}`
+        dateConditions.push(sql`${respondents.completedAt} >= ${new Date(query.startDate)}` as any)
       }
       if (query.endDate) {
         const endDate = new Date(query.endDate)
         endDate.setHours(23, 59, 59, 999)
-        dateFilter = and(dateFilter, sql`${respondents.completedAt} <= ${endDate}`)!
+        dateConditions.push(sql`${respondents.completedAt} <= ${endDate}` as any)
       }
 
       // Get response counts
@@ -215,7 +215,7 @@ export const dashboardRoutes = new Elysia({ prefix: '/dashboard' })
           abandoned: sql<number>`count(*) filter (where ${respondents.status} = 'abandoned')::int`,
         })
         .from(respondents)
-        .where(and(eq(respondents.campaignId, params.id), dateFilter))
+        .where(and(...dateConditions))
 
       // Get profile distribution
       const profileDistribution = await db
@@ -225,9 +225,8 @@ export const dashboardRoutes = new Elysia({ prefix: '/dashboard' })
         })
         .from(respondents)
         .where(and(
-          eq(respondents.campaignId, params.id),
-          eq(respondents.status, 'completed'),
-          dateFilter
+          ...dateConditions,
+          eq(respondents.status, 'completed')
         ))
         .groupBy(respondents.primaryMythe)
 
@@ -261,6 +260,7 @@ export const dashboardRoutes = new Elysia({ prefix: '/dashboard' })
           id: campaign.id,
           name: campaign.name,
           status: campaign.status,
+          slug: campaign.slug,
         },
         stats: {
           total: counts?.total || 0,

@@ -688,11 +688,31 @@ export function useCreatePortalSession() {
   })
 }
 
+export function usePreviewSeats() {
+  return useMutation({
+    mutationFn: (seats: number) =>
+      fetchAPI<{
+        currentSeats: number
+        newSeats: number
+        seatsChange: number
+        prorationAmount: number
+        prorationAmountFormatted: string
+        monthlyChange: number
+        monthlyChangeFormatted: string
+        immediateCharge: boolean
+        daysRemaining?: number
+      }>('/billing/preview-seats', {
+        method: 'POST',
+        body: JSON.stringify({ seats }),
+      }),
+  })
+}
+
 export function useUpdateSeats() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (seats: number) =>
-      fetchAPI<{ subscription: Subscription }>('/billing/update-seats', {
+      fetchAPI<{ success: boolean; message: string }>('/billing/update-seats', {
         method: 'POST',
         body: JSON.stringify({ seats }),
       }),
@@ -726,5 +746,91 @@ export function useReactivateSubscription() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['billing'] })
     },
+  })
+}
+
+export function useSyncSubscription() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      fetchAPI<{ subscription: Subscription | null }>('/billing/sync', {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing'] })
+    },
+  })
+}
+
+// API Keys & Usage
+export interface ApiKey {
+  id: string
+  name: string
+  keyPrefix: string
+  isActive: boolean
+  lastUsedAt: string | null
+  expiresAt: string | null
+  createdAt: string
+}
+
+export interface ApiUsage {
+  credits: {
+    balance: number
+    weeklyUsed: number
+    weeklyLimit: number
+    weeklyRemaining: number
+    totalPurchased: number
+    totalUsed: number
+    weekResetsAt: number
+  }
+  apiEnabled: boolean
+  recentCallsCount: number
+}
+
+export function useApiKeys() {
+  return useQuery({
+    queryKey: ['api-keys'],
+    queryFn: () => fetchAPI<{
+      keys: ApiKey[]
+    }>('/api-keys'),
+  })
+}
+
+export function useCreateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name: string; expiresAt?: string }) =>
+      fetchAPI<{
+        success: boolean
+        key: string
+        apiKey: ApiKey
+        warning: string
+      }>('/api-keys', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    },
+  })
+}
+
+export function useRevokeApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchAPI<{ success: boolean; message: string }>(`/api-keys/${id}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    },
+  })
+}
+
+export function useApiUsage() {
+  return useQuery({
+    queryKey: ['api-usage'],
+    queryFn: () => fetchAPI<ApiUsage>('/billing/api-usage'),
   })
 }

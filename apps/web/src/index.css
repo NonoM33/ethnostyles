@@ -22,3 +22,12 @@ input, textarea, select {
 input::placeholder, textarea::placeholder {
   color: #9ca3af;
 }
+
+/* Hide scrollbar for horizontal scroll elements on mobile */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

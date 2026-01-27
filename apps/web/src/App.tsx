@@ -30,6 +30,7 @@ import { TeamCampaignsPage } from './features/teams/TeamCampaignsPage'
 import { TeamDashboardPage } from './features/teams/TeamDashboardPage'
 import { AnalyticsPage } from './features/analytics/AnalyticsPage'
 import { BillingPage } from './features/billing'
+import { ApiPage } from './features/api'
 import { LandingPage } from './pages/LandingPage'
 
 function HomePage() {
@@ -144,6 +145,7 @@ function AppRoutes() {
         <Route path="/teams/:id" element={<TeamDashboardPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/billing" element={<BillingPage />} />
+        <Route path="/api" element={<ApiPage />} />
       </Route>
 
       {/* Public questionnaire routes */}

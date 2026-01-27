@@ -6,14 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Les 8 profils culturels (étude Laurent Benarbia, nov 2022 - 2023 Français)
 // Noms simplifiés pour la landing page + noms scientifiques entre parenthèses
 const ILES_CULTURES = [
-  { name: 'Les Prudents', scientificName: 'Incertitudes face à l\'avenir', color: '#6B7280', emoji: '🌫️', description: 'Cherchent la sécurité et la stabilité', poids: '19%' },
-  { name: 'Les Protecteurs', scientificName: 'Primauté du clan', color: '#EC4899', emoji: '👨‍👩‍👧‍👦', description: 'La famille et l\'équipe avant tout', poids: '18,4%' },
-  { name: 'Les Engagés', scientificName: 'Réconciliation homme/nature', color: '#10B981', emoji: '🌿', description: 'Portés par les valeurs et l\'impact', poids: '13,8%' },
-  { name: 'Les Équilibristes', scientificName: 'Mythe du contrat social', color: '#8B5CF6', emoji: '⚖️', description: 'Justice, autonomie et consensus', poids: '11,4%' },
-  { name: 'Les Innovateurs', scientificName: 'Mythe du progrès technique', color: '#3B82F6', emoji: '🔬', description: 'Veulent tester, innover, avancer', poids: '11,1%' },
-  { name: 'Les Ambitieux', scientificName: 'Culte de la consommation', color: '#F59E0B', emoji: '💎', description: 'Résultats, performance, reconnaissance', poids: '10,9%' },
-  { name: 'Les Enthousiastes', scientificName: 'Quête du plaisir', color: '#EF4444', emoji: '🎉', description: 'Énergie, convivialité, spontanéité', poids: '7,9%' },
-  { name: 'Les Gardiens', scientificName: 'Tradition sacrée', color: '#7C3AED', emoji: '🏛️', description: 'Respect des process et de l\'histoire', poids: '7,6%' },
+  { name: 'Incertitudes face à l\'avenir', shortName: 'Les Prudents', color: '#6B7280', emoji: '🌫️', description: 'Cherchent la sécurité et la stabilité', poids: '19%' },
+  { name: 'Primauté du clan', shortName: 'Les Protecteurs', color: '#EC4899', emoji: '❤️', description: 'La famille et l\'équipe avant tout', poids: '18,4%' },
+  { name: 'Réconciliation homme/nature', shortName: 'Les Engagés', color: '#10B981', emoji: '🌍', description: 'Portés par les valeurs et l\'impact', poids: '13,8%' },
+  { name: 'Mythe du contrat social', shortName: 'Les Équilibristes', color: '#3B82F6', emoji: '🤝', description: 'Justice, autonomie et consensus', poids: '11,4%' },
+  { name: 'Mythe du progrès technique', shortName: 'Les Innovateurs', color: '#06B6D4', emoji: '🚀', description: 'Veulent tester, innover, avancer', poids: '11,1%' },
+  { name: 'Culte de l\'appropriation', shortName: 'Les Ambitieux', color: '#F59E0B', emoji: '🏆', description: 'Résultats, performance, reconnaissance', poids: '10,9%' },
+  { name: 'Quête du plaisir', shortName: 'Les Enthousiastes', color: '#EC4899', emoji: '✨', description: 'Énergie, convivialité, spontanéité', poids: '7,9%' },
+  { name: 'Tradition sacrée', shortName: 'Les Gardiens', color: '#8B5CF6', emoji: '⚜️', description: 'Respect des process et de l\'histoire', poids: '7,6%' },
 ]
 
 // Cas concrets d'utilisation par type de collaborateur

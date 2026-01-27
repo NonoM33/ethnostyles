@@ -3,16 +3,16 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
 
-// Les 8 profils culturels Ethnostyles
+// Les 8 îles-cultures (étude Laurent Benarbia, nov 2022 - 2023 Français)
 const PROFILS = [
-  { name: 'Les Prudents', emoji: '🌫️', color: '#6B7280', position: { top: '12%', left: '8%' } },
-  { name: 'Les Protecteurs', emoji: '👨‍👩‍👧‍👦', color: '#EC4899', position: { top: '22%', right: '12%' } },
-  { name: 'Les Engagés', emoji: '🌿', color: '#10B981', position: { top: '42%', left: '5%' } },
-  { name: 'Les Équilibristes', emoji: '⚖️', color: '#8B5CF6', position: { top: '52%', right: '6%' } },
-  { name: 'Les Innovateurs', emoji: '🔬', color: '#3B82F6', position: { bottom: '38%', left: '10%' } },
-  { name: 'Les Ambitieux', emoji: '💎', color: '#F59E0B', position: { bottom: '28%', right: '10%' } },
-  { name: 'Les Enthousiastes', emoji: '🎉', color: '#EF4444', position: { bottom: '18%', left: '22%' } },
-  { name: 'Les Gardiens', emoji: '🏛️', color: '#7C3AED', position: { bottom: '12%', right: '22%' } },
+  { name: 'Incertitudes face à l\'avenir', emoji: '🌫️', color: '#6B7280', position: { top: '12%', left: '8%' }, poids: '19%' },
+  { name: 'Primauté du clan', emoji: '❤️', color: '#EC4899', position: { top: '22%', right: '12%' }, poids: '18,4%' },
+  { name: 'Réconciliation homme/nature', emoji: '🌍', color: '#10B981', position: { top: '42%', left: '5%' }, poids: '13,8%' },
+  { name: 'Mythe du contrat social', emoji: '🤝', color: '#3B82F6', position: { top: '52%', right: '6%' }, poids: '11,4%' },
+  { name: 'Mythe du progrès technique', emoji: '🚀', color: '#06B6D4', position: { bottom: '38%', left: '10%' }, poids: '11,1%' },
+  { name: 'Culte de l\'appropriation', emoji: '🏆', color: '#F59E0B', position: { bottom: '28%', right: '10%' }, poids: '10,9%' },
+  { name: 'Quête du plaisir', emoji: '✨', color: '#EC4899', position: { bottom: '18%', left: '22%' }, poids: '7,9%' },
+  { name: 'Tradition sacrée', emoji: '⚜️', color: '#8B5CF6', position: { bottom: '12%', right: '22%' }, poids: '7,6%' },
 ]
 
 function FloatingProfil({ profil, index }: { profil: typeof PROFILS[0]; index: number }) {

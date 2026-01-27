@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   useApiKeys,
@@ -522,15 +523,15 @@ export function ApiPage() {
             L'acces a l'API est reserve aux plans Pro et Enterprise.
             Passez a un forfait superieur pour debloquer l'API.
           </p>
-          <a
-            href="/billing"
+          <Link
+            to="/billing"
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
           >
             Voir les forfaits
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </a>
+          </Link>
         </div>
 
         <ApiDocumentation />

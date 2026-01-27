@@ -99,6 +99,28 @@ All responses are JSON with consistent error format:
       summary: 'Health check'
     }
   })
+  .get('/debug/tables', async () => {
+    const { db } = await import('@etnostyles/db')
+    const { sql } = await import('drizzle-orm')
+    try {
+      const result = await db.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `)
+      return {
+        status: 'ok',
+        tables: result.rows,
+        count: result.rows.length
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  })
   .get('/debug/billing', async () => {
     const { db } = await import('@etnostyles/db')
     const { sql } = await import('drizzle-orm')

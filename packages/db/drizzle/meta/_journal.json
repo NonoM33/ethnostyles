@@ -57,6 +57,13 @@
       "when": 1769389500000,
       "tag": "0007_fix_missing_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1769479200000,
+      "tag": "0008_add_billing_tables",
+      "breakpoints": true
     }
   ]
 }

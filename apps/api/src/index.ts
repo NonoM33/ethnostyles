@@ -196,6 +196,63 @@ All responses are JSON with consistent error format:
       }
     }
   })
+  .post('/debug/fix-campaigns', async () => {
+    const { db } = await import('@etnostyles/db')
+    const { sql } = await import('drizzle-orm')
+    try {
+      // Create enum if not exists
+      await db.execute(sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'questionnaire_size') THEN
+            CREATE TYPE "public"."questionnaire_size" AS ENUM('express', 'standard', 'complete');
+          END IF;
+        END$$
+      `)
+
+      // Add column
+      await db.execute(sql`
+        ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "questionnaire_size" "questionnaire_size" DEFAULT 'standard'
+      `)
+
+      // Create style enum if not exists
+      await db.execute(sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'questionnaire_style') THEN
+            CREATE TYPE "public"."questionnaire_style" AS ENUM('professional', 'casual', 'playful');
+          END IF;
+        END$$
+      `)
+
+      // Add style column
+      await db.execute(sql`
+        ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "questionnaire_style" "questionnaire_style" DEFAULT 'professional'
+      `)
+
+      // Add other missing columns
+      await db.execute(sql`
+        ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "custom_question_ids" TEXT
+      `)
+      await db.execute(sql`
+        ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "last_export_at" TIMESTAMP
+      `)
+      await db.execute(sql`
+        ALTER TABLE "campaigns" ADD COLUMN IF NOT EXISTS "export_email" VARCHAR(255)
+      `)
+
+      return {
+        status: 'ok',
+        message: 'Columns added successfully'
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined
+      }
+    }
+  })
   .get('/debug/billing', async () => {
     const { db } = await import('@etnostyles/db')
     const { sql } = await import('drizzle-orm')

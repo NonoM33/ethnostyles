@@ -98,6 +98,31 @@ All responses are JSON with consistent error format:
       summary: 'Health check'
     }
   })
+  .get('/debug/billing', async () => {
+    const { db } = await import('@etnostyles/db')
+    const { sql } = await import('drizzle-orm')
+    try {
+      // Test database connection and check tables
+      const tables = await db.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name IN ('subscriptions', 'invoices', 'payment_methods', 'campaigns', 'respondents', 'users')
+      `)
+      return {
+        status: 'ok',
+        tables: tables.rows,
+        stripeKeyExists: !!process.env['STRIPE_SECRET_KEY'],
+        stripeKeyPrefix: process.env['STRIPE_SECRET_KEY']?.substring(0, 10)
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }
+    }
+  })
   .use(authRoutes)
   .use(teamRoutes)
   .use(campaignRoutes)

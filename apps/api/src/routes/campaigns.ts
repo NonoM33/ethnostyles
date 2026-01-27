@@ -1,5 +1,4 @@
 import { Elysia, t } from 'elysia'
-// Cache bust: 2026-01-27-v1
 import { db, campaigns, tenants, users, sessions, eq, and } from '@etnostyles/db'
 import { createHmac } from 'crypto'
 
@@ -68,27 +67,6 @@ async function getCurrentUser(authHeader: string | undefined) {
 }
 
 export const campaignRoutes = new Elysia({ prefix: '/campaigns' })
-  .get('/debug-db', async () => {
-    try {
-      // Test the db connection from this module
-      const sessionsList = await db
-        .select({ id: sessions.id })
-        .from(sessions)
-        .limit(3)
-
-      return {
-        status: 'ok',
-        sessionsCount: sessionsList.length,
-        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
-      }
-    } catch (error) {
-      return {
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
-      }
-    }
-  })
   .get(
     '/',
     async ({ headers, set }) => {

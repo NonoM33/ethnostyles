@@ -1,8 +1,8 @@
-// Cache bust: 2026-01-27-v4
+// Cache bust: 2026-01-27-v5
 import { Elysia } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { swagger } from '@elysiajs/swagger'
-import { runMigrations } from '@etnostyles/db'
+import { runMigrations, db, users, eq } from '@etnostyles/db'
 import { authRoutes } from './routes/auth'
 import { teamRoutes } from './routes/team'
 import { campaignRoutes } from './routes/campaigns'
@@ -120,6 +120,30 @@ All responses are JSON with consistent error format:
       return {
         status: 'error',
         message: error instanceof Error ? error.message : 'Unknown error',
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    }
+  })
+  // Debug endpoint using STATIC imports (same pattern as auth routes)
+  .get('/debug/static-db', async () => {
+    try {
+      // Use the statically imported db, users, eq from the top of this file
+      const usersList = await db
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .limit(5)
+
+      return {
+        status: 'ok',
+        usersCount: usersList.length,
+        users: usersList.map(u => u.email),
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined,
         databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
       }
     }

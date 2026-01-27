@@ -1,4 +1,4 @@
-// Cache bust: 2026-01-27-v2
+// Cache bust: 2026-01-27-v4
 import { Elysia } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { swagger } from '@elysiajs/swagger'

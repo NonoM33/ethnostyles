@@ -3,16 +3,20 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
 
-// Les 8 îles-cultures (étude Laurent Benarbia, nov 2022 - 2023 Français)
+// Les 8 îles-cultures - Positionnées en arc sur les bords pour ne pas gêner le contenu
 const PROFILS = [
-  { name: 'Incertitudes face à l\'avenir', emoji: '🌫️', color: '#6B7280', position: { top: '12%', left: '8%' }, poids: '19%' },
-  { name: 'Primauté du clan', emoji: '❤️', color: '#EC4899', position: { top: '22%', right: '12%' }, poids: '18,4%' },
-  { name: 'Réconciliation homme/nature', emoji: '🌍', color: '#10B981', position: { top: '42%', left: '5%' }, poids: '13,8%' },
-  { name: 'Mythe du contrat social', emoji: '🤝', color: '#3B82F6', position: { top: '52%', right: '6%' }, poids: '11,4%' },
-  { name: 'Mythe du progrès technique', emoji: '🚀', color: '#06B6D4', position: { bottom: '38%', left: '10%' }, poids: '11,1%' },
-  { name: 'Culte de l\'appropriation', emoji: '🏆', color: '#F59E0B', position: { bottom: '28%', right: '10%' }, poids: '10,9%' },
-  { name: 'Quête du plaisir', emoji: '✨', color: '#EC4899', position: { bottom: '18%', left: '22%' }, poids: '7,9%' },
-  { name: 'Tradition sacrée', emoji: '⚜️', color: '#8B5CF6', position: { bottom: '12%', right: '22%' }, poids: '7,6%' },
+  // Haut - 2 profils aux extrémités
+  { name: 'Incertitudes', emoji: '🌫️', position: { top: '8%', right: '5%' } },
+  { name: 'Clan', emoji: '❤️', position: { top: '18%', right: '3%' } },
+  // Droite - 2 profils
+  { name: 'Nature', emoji: '🌍', position: { top: '32%', right: '2%' } },
+  { name: 'Contrat social', emoji: '🤝', position: { top: '46%', right: '4%' } },
+  // Bas droite - 2 profils
+  { name: 'Progrès', emoji: '🚀', position: { bottom: '35%', right: '3%' } },
+  { name: 'Ambition', emoji: '🏆', position: { bottom: '22%', right: '5%' } },
+  // Bas - 2 profils
+  { name: 'Plaisir', emoji: '✨', position: { bottom: '10%', right: '15%' } },
+  { name: 'Tradition', emoji: '⚜️', position: { bottom: '5%', right: '30%' } },
 ]
 
 function FloatingProfil({ profil, index }: { profil: typeof PROFILS[0]; index: number }) {
@@ -20,23 +24,24 @@ function FloatingProfil({ profil, index }: { profil: typeof PROFILS[0]; index: n
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-      className="absolute"
+      transition={{ delay: 0.8 + index * 0.15, duration: 0.5 }}
+      className="absolute pointer-events-none"
       style={{ ...profil.position }}
     >
       <motion.div
         animate={{
-          y: [0, -8, 0],
+          y: [0, -6, 0],
+          x: [0, index % 2 === 0 ? 3 : -3, 0],
         }}
         transition={{
-          duration: 3 + index * 0.5,
+          duration: 4 + index * 0.3,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-white/10 border border-white/20"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md bg-white/10 border border-white/20 shadow-lg"
       >
-        <span className="text-sm">{profil.emoji}</span>
-        <span className="text-xs font-medium text-white/80">{profil.name}</span>
+        <span className="text-xs">{profil.emoji}</span>
+        <span className="text-[10px] font-medium text-white/70">{profil.name}</span>
       </motion.div>
     </motion.div>
   )

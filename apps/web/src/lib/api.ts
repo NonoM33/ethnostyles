@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
-const API_URL = import.meta.env['VITE_API_URL'] || 'http://localhost:3000'
+// Use /api prefix for nginx proxy in production, or direct localhost for dev
+const API_URL = import.meta.env['VITE_API_URL'] || (import.meta.env['DEV'] ? 'http://localhost:3000' : '/api')
 
 function getToken() {
   return localStorage.getItem('session_token')

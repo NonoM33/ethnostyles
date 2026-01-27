@@ -85,7 +85,7 @@ export function LoginPage() {
               y: [0, -20, 0],
             }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-br from-emerald-500/30 to-teal-500/20 rounded-full blur-3xl"
+            className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-br from-indigo-500/30 to-purple-500/20 rounded-full blur-3xl"
           />
           <motion.div
             animate={{
@@ -124,12 +124,12 @@ export function LoginPage() {
         {/* Content */}
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
               <span className="text-white font-bold text-lg">E</span>
             </div>
             <div>
               <span className="text-xl font-bold text-white">Ethnostyles</span>
-              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-emerald-300 border border-emerald-500/30">
+              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-indigo-300 border border-indigo-500/30">
                 Profiler
               </span>
             </div>
@@ -144,7 +144,7 @@ export function LoginPage() {
           >
             <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
               Découvrez les profils
-              <span className="block bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 culturels de vos équipes
               </span>
             </h2>
@@ -160,7 +160,7 @@ export function LoginPage() {
             className="mt-10 space-y-4"
           >
             {[
-              { icon: '◈', text: 'Questionnaire scientifiquement validé', color: 'from-emerald-400 to-teal-400' },
+              { icon: '◈', text: 'Questionnaire scientifiquement validé', color: 'from-indigo-400 to-purple-400' },
               { icon: '◈', text: 'Analytics en temps réel', color: 'from-cyan-400 to-blue-400' },
               { icon: '◈', text: 'Rapports détaillés et exploitables', color: 'from-violet-400 to-purple-400' },
             ].map((item, i) => (
@@ -187,7 +187,7 @@ export function LoginPage() {
               { value: '97%', label: 'Satisfaction' },
             ].map((stat, index) => (
               <div key={index}>
-                <p className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   {stat.value}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
@@ -207,7 +207,7 @@ export function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <span className="text-white font-bold text-lg">E</span>
               </div>
               <span className="text-xl font-bold text-slate-900">Ethnostyles</span>
@@ -308,7 +308,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 px-4 rounded-xl font-medium hover:from-emerald-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 px-4 rounded-xl font-medium hover:from-emerald-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
               >
                 {isLoading ? (
                   <>

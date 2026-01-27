@@ -1,5 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { Sidebar, useSidebar, useSidebarWidth } from './Sidebar'
+import { CommandPalette } from './CommandPalette'
 
 // Breadcrumb mappings
 const breadcrumbLabels: Record<string, string> = {
@@ -29,6 +30,9 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Command Palette (Ctrl+K) */}
+      <CommandPalette />
+
       {/* Sidebar */}
       <Sidebar />
 

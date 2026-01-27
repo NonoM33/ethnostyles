@@ -146,6 +146,48 @@ export function AnalyticsPage() {
           </div>
         </div>
 
+        {/* Empty State for all tabs when no data */}
+        {activeTab === 'culture' && !cultureMap && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm p-12 text-center"
+          >
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">Cartographiez votre culture</h2>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">
+              Lancez des campagnes internes pour collecter les profils culturels de vos équipes et visualiser la carte de votre organisation.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+                  <span className="text-indigo-600 font-bold">1</span>
+                </div>
+                <h3 className="font-medium text-gray-900 mb-1">Créez une campagne</h3>
+                <p className="text-sm text-gray-500">Configurez un questionnaire adapté à vos besoins</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+                  <span className="text-indigo-600 font-bold">2</span>
+                </div>
+                <h3 className="font-medium text-gray-900 mb-1">Invitez vos équipes</h3>
+                <p className="text-sm text-gray-500">Partagez le lien du questionnaire en interne</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+                  <span className="text-indigo-600 font-bold">3</span>
+                </div>
+                <h3 className="font-medium text-gray-900 mb-1">Analysez les résultats</h3>
+                <p className="text-sm text-gray-500">Découvrez la carte culturelle de votre organisation</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Culture Map Tab */}
         {activeTab === 'culture' && cultureMap && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -320,6 +362,30 @@ export function AnalyticsPage() {
           </div>
         )}
 
+        {/* Empty State for Gap Tab */}
+        {activeTab === 'gap' && !cultureGap && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm p-12 text-center"
+          >
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">Analysez vos écarts culturels</h2>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              Définissez une culture cible et comparez-la à votre culture actuelle pour identifier les axes de transformation.
+            </p>
+            <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 max-w-md mx-auto">
+              <p className="text-sm text-purple-700">
+                <strong>Prérequis :</strong> Collectez d'abord des profils via vos campagnes pour avoir une base de comparaison.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Gap Analysis Tab */}
         {activeTab === 'gap' && cultureGap && (
           <div className="space-y-8">
@@ -472,6 +538,30 @@ export function AnalyticsPage() {
               </>
             )}
           </div>
+        )}
+
+        {/* Empty State for Trends Tab */}
+        {activeTab === 'trends' && !trends && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm p-12 text-center"
+          >
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">Suivez l'évolution culturelle</h2>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              Visualisez comment la culture de votre organisation évolue au fil du temps et identifiez les tendances significatives.
+            </p>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 max-w-md mx-auto">
+              <p className="text-sm text-amber-700">
+                <strong>Conseil :</strong> Lancez des campagnes régulières (trimestrielles) pour obtenir des données de tendance pertinentes.
+              </p>
+            </div>
+          </motion.div>
         )}
 
         {/* Trends Tab */}

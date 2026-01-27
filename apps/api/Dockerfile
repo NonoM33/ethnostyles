@@ -1,8 +1,7 @@
-# Build stage
-FROM oven/bun:1.2 AS builder
+# Single stage - no bundling, just run with bun directly
+FROM oven/bun:1.2
 
 WORKDIR /app
-
 
 # Copy package files
 COPY package.json bun.lock ./
@@ -13,28 +12,12 @@ COPY packages/email/package.json packages/email/
 COPY packages/shared/package.json packages/shared/
 
 # Install dependencies
-RUN bun install
+RUN bun install --production
 
 # Copy source code
 COPY apps/api apps/api
 COPY packages packages
 COPY tsconfig.json ./
-
-# Build
-WORKDIR /app/apps/api
-# Exclude @etnostyles packages from bundling so they use runtime env vars
-RUN bun build src/index.ts --outdir dist --target bun --external @etnostyles/db --external @etnostyles/config --external @etnostyles/email --external @etnostyles/shared
-
-# Production stage
-FROM oven/bun:1.2-slim
-
-WORKDIR /app
-
-# Copy built files and dependencies
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
 
 # Set environment
 ENV NODE_ENV=production
@@ -42,4 +25,5 @@ ENV API_PORT=3000
 
 EXPOSE 3000
 
-CMD ["bun", "run", "dist/index.js"]
+WORKDIR /app/apps/api
+CMD ["bun", "run", "src/index.ts"]

@@ -76,19 +76,24 @@ export function useCampaigns() {
 export function useCampaign(id: string | undefined) {
   return useQuery({
     queryKey: ['campaigns', id],
-    queryFn: () => fetchAPI<{
-      id: string
-      name: string
-      description: string | null
-      status: 'draft' | 'active' | 'archived'
-      slug: string
-      logoUrl: string | null
-      primaryColor: string | null
-      webhookUrl: string | null
-      webhookSecret: string | null
-      createdAt: string
-      updatedAt: string
-    }>(`/campaigns/${id}`),
+    queryFn: async () => {
+      const response = await fetchAPI<{
+        campaign: {
+          id: string
+          name: string
+          description: string | null
+          status: 'draft' | 'active' | 'archived'
+          slug: string
+          logoUrl: string | null
+          primaryColor: string | null
+          webhookUrl: string | null
+          webhookSecret: string | null
+          createdAt: string
+          updatedAt: string
+        }
+      }>(`/campaigns/${id}`)
+      return response.campaign
+    },
     enabled: !!id,
   })
 }

@@ -99,6 +99,31 @@ All responses are JSON with consistent error format:
       summary: 'Health check'
     }
   })
+  .get('/debug/sessions', async () => {
+    try {
+      // Import directly like the routes do
+      const { db, sessions } = await import('@etnostyles/db')
+      const { eq } = await import('drizzle-orm')
+
+      // Try to query sessions
+      const allSessions = await db
+        .select()
+        .from(sessions)
+        .limit(5)
+
+      return {
+        status: 'ok',
+        sessionCount: allSessions.length,
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    }
+  })
   .get('/debug/tables', async () => {
     const { db } = await import('@etnostyles/db')
     const { sql } = await import('drizzle-orm')

@@ -109,10 +109,14 @@ All responses are JSON with consistent error format:
         WHERE table_schema = 'public'
         ORDER BY table_name
       `)
+      // drizzle returns array directly, not {rows: [...]}
+      const tables = Array.isArray(result) ? result : (result as any).rows || []
       return {
         status: 'ok',
-        tables: result.rows,
-        count: result.rows.length
+        tables: tables,
+        count: tables.length,
+        rawType: typeof result,
+        isArray: Array.isArray(result)
       }
     } catch (error) {
       return {

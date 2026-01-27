@@ -107,7 +107,7 @@ All responses are JSON with consistent error format:
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-        AND table_name IN ('subscriptions', 'invoices', 'payment_methods', 'campaigns', 'respondents', 'users')
+        AND table_name IN ('subscriptions', 'invoices', 'payment_methods', 'campaigns', 'respondents', 'users', 'sessions', 'tenants')
       `)
       return {
         status: 'ok',
@@ -121,6 +121,59 @@ All responses are JSON with consistent error format:
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       }
+    }
+  })
+  .post('/db/migrate', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+
+    // Check what's in the migrations folder
+    const migrationsPath = '/app/packages/db/drizzle'
+    let files: string[] = []
+    let migrationError: string | null = null
+
+    try {
+      files = fs.readdirSync(migrationsPath)
+    } catch (e) {
+      migrationError = `Cannot read migrations folder: ${e instanceof Error ? e.message : 'Unknown error'}`
+    }
+
+    // Try to run migrations
+    let migrationResult: string = 'not attempted'
+    if (!migrationError) {
+      try {
+        const { runMigrations } = await import('@etnostyles/db')
+        await runMigrations()
+        migrationResult = 'success'
+      } catch (e) {
+        migrationResult = `failed: ${e instanceof Error ? e.message : 'Unknown error'}`
+      }
+    }
+
+    // Check tables after migration
+    const { db } = await import('@etnostyles/db')
+    const { sql } = await import('drizzle-orm')
+    let tables: any[] = []
+    try {
+      const result = await db.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `)
+      tables = result.rows as any[]
+    } catch (e) {
+      // ignore
+    }
+
+    return {
+      migrationsPath,
+      files,
+      migrationError,
+      migrationResult,
+      tablesAfterMigration: tables,
+      nodeEnv: process.env['NODE_ENV'],
+      databaseUrlExists: !!process.env['DATABASE_URL']
     }
   })
   .use(authRoutes)

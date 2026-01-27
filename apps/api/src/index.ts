@@ -155,6 +155,7 @@ All responses are JSON with consistent error format:
     const { db } = await import('@etnostyles/db')
     const { sql } = await import('drizzle-orm')
     let tables: any[] = []
+    let tablesError: string | null = null
     try {
       const result = await db.execute(sql`
         SELECT table_name
@@ -164,7 +165,7 @@ All responses are JSON with consistent error format:
       `)
       tables = result.rows as any[]
     } catch (e) {
-      // ignore
+      tablesError = e instanceof Error ? e.message : 'Unknown error'
     }
 
     return {
@@ -173,8 +174,10 @@ All responses are JSON with consistent error format:
       migrationError,
       migrationResult,
       tablesAfterMigration: tables,
+      tablesError,
       nodeEnv: process.env['NODE_ENV'],
-      databaseUrlExists: !!process.env['DATABASE_URL']
+      databaseUrlExists: !!process.env['DATABASE_URL'],
+      cacheVersion: '2026-01-27-v3'
     }
   })
   .use(authRoutes)

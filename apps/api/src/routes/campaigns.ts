@@ -68,6 +68,27 @@ async function getCurrentUser(authHeader: string | undefined) {
 }
 
 export const campaignRoutes = new Elysia({ prefix: '/campaigns' })
+  .get('/debug-db', async () => {
+    try {
+      // Test the db connection from this module
+      const sessionsList = await db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .limit(3)
+
+      return {
+        status: 'ok',
+        sessionsCount: sessionsList.length,
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        databaseUrl: process.env['DATABASE_URL']?.substring(0, 30) + '...'
+      }
+    }
+  })
   .get(
     '/',
     async ({ headers, set }) => {

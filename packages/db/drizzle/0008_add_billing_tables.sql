@@ -4,7 +4,7 @@ CREATE TYPE "public"."plan_id" AS ENUM('free', 'pro', 'enterprise');--> statemen
 
 CREATE TABLE IF NOT EXISTS "subscriptions" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"stripe_customer_id" varchar(255) NOT NULL,
 	"plan_id" "plan_id" DEFAULT 'free' NOT NULL,
 	"status" "subscription_status" DEFAULT 'active' NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS "subscriptions" (
 
 CREATE TABLE IF NOT EXISTS "payment_methods" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"stripe_customer_id" varchar(255) NOT NULL,
 	"type" varchar(50) DEFAULT 'card' NOT NULL,
 	"card_brand" varchar(50),
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS "payment_methods" (
 
 CREATE TABLE IF NOT EXISTS "invoices" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"subscription_id" varchar(255),
 	"number" varchar(100),
 	"status" varchar(50) NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS "invoices" (
 
 CREATE TABLE IF NOT EXISTS "usage_records" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"period_start" timestamp NOT NULL,
 	"period_end" timestamp NOT NULL,
 	"campaigns_used" integer DEFAULT 0 NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS "usage_records" (
 
 CREATE TABLE IF NOT EXISTS "api_credits" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL UNIQUE,
+	"tenant_id" uuid NOT NULL UNIQUE,
 	"balance" integer DEFAULT 0 NOT NULL,
 	"weekly_used" integer DEFAULT 0 NOT NULL,
 	"week_starts_at" timestamp NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS "api_credits" (
 
 CREATE TABLE IF NOT EXISTS "api_call_logs" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"api_key_id" varchar(36),
 	"endpoint" varchar(255) NOT NULL,
 	"method" varchar(10) NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS "api_call_logs" (
 
 CREATE TABLE IF NOT EXISTS "credit_purchases" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
-	"tenant_id" varchar(36) NOT NULL,
+	"tenant_id" uuid NOT NULL,
 	"stripe_payment_intent_id" varchar(255),
 	"credits" integer NOT NULL,
 	"amount_paid" integer NOT NULL,

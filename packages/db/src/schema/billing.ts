@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, boolean, text, jsonb, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, varchar, integer, timestamp, boolean, text, jsonb, pgEnum, uuid } from 'drizzle-orm/pg-core'
 import { tenantColumns, timestampColumns } from './base'
 import { tenants } from './tenants'
 import { relations } from 'drizzle-orm'
@@ -66,7 +66,7 @@ export type PlanId = keyof typeof PLANS
 // Subscriptions table
 export const subscriptions = pgTable('subscriptions', {
   id: varchar('id', { length: 255 }).primaryKey(), // Stripe subscription ID
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).notNull(),
   planId: planIdEnum('plan_id').notNull().default('free'),
   status: subscriptionStatusEnum('status').notNull().default('active'),
@@ -85,7 +85,7 @@ export const subscriptions = pgTable('subscriptions', {
 // Payment methods table
 export const paymentMethods = pgTable('payment_methods', {
   id: varchar('id', { length: 255 }).primaryKey(), // Stripe payment method ID
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).notNull(),
   type: varchar('type', { length: 50 }).notNull().default('card'),
   cardBrand: varchar('card_brand', { length: 50 }),
@@ -99,7 +99,7 @@ export const paymentMethods = pgTable('payment_methods', {
 // Invoices table (cached from Stripe)
 export const invoices = pgTable('invoices', {
   id: varchar('id', { length: 255 }).primaryKey(), // Stripe invoice ID
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   subscriptionId: varchar('subscription_id', { length: 255 }).references(() => subscriptions.id),
   number: varchar('number', { length: 100 }),
   status: varchar('status', { length: 50 }).notNull(), // draft, open, paid, void, uncollectible
@@ -116,7 +116,7 @@ export const invoices = pgTable('invoices', {
 // Usage tracking table
 export const usageRecords = pgTable('usage_records', {
   id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   periodStart: timestamp('period_start', { mode: 'date' }).notNull(),
   periodEnd: timestamp('period_end', { mode: 'date' }).notNull(),
   campaignsUsed: integer('campaigns_used').notNull().default(0),
@@ -128,7 +128,7 @@ export const usageRecords = pgTable('usage_records', {
 // API Credits balance per tenant
 export const apiCredits = pgTable('api_credits', {
   id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().unique().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().unique().references(() => tenants.id, { onDelete: 'cascade' }),
   balance: integer('balance').notNull().default(0), // Current credit balance
   weeklyUsed: integer('weekly_used').notNull().default(0), // API calls used this week
   weekStartsAt: timestamp('week_starts_at', { mode: 'date' }).notNull(), // When the weekly limit resets
@@ -140,7 +140,7 @@ export const apiCredits = pgTable('api_credits', {
 // API Call log for tracking individual calls
 export const apiCallLogs = pgTable('api_call_logs', {
   id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   apiKeyId: varchar('api_key_id', { length: 36 }),
   endpoint: varchar('endpoint', { length: 255 }).notNull(),
   method: varchar('method', { length: 10 }).notNull(),
@@ -157,7 +157,7 @@ export const apiCallLogs = pgTable('api_call_logs', {
 // Credit purchase transactions
 export const creditPurchases = pgTable('credit_purchases', {
   id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  tenantId: varchar('tenant_id', { length: 36 }).notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
   credits: integer('credits').notNull(),
   amountPaid: integer('amount_paid').notNull(), // in cents

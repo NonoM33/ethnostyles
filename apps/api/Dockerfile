@@ -22,7 +22,8 @@ COPY tsconfig.json ./
 
 # Build
 WORKDIR /app/apps/api
-RUN bun build src/index.ts --outdir dist --target bun
+# Exclude @etnostyles packages from bundling so they use runtime env vars
+RUN bun build src/index.ts --outdir dist --target bun --external @etnostyles/db --external @etnostyles/config --external @etnostyles/email --external @etnostyles/shared
 
 # Production stage
 FROM oven/bun:1.2-slim

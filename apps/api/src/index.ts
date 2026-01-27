@@ -174,6 +174,28 @@ All responses are JSON with consistent error format:
       }
     }
   })
+  .get('/debug/campaigns-columns', async () => {
+    const { db } = await import('@etnostyles/db')
+    const { sql } = await import('drizzle-orm')
+    try {
+      const result = await db.execute(sql`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_name = 'campaigns'
+        ORDER BY ordinal_position
+      `)
+      const columns = Array.isArray(result) ? result : (result as any).rows || []
+      return {
+        status: 'ok',
+        columns: columns
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  })
   .get('/debug/billing', async () => {
     const { db } = await import('@etnostyles/db')
     const { sql } = await import('drizzle-orm')

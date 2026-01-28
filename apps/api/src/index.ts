@@ -138,10 +138,11 @@ All responses are JSON with consistent error format:
         WHERE table_schema = 'public'
         ORDER BY table_name
       `)
-      tables = result.rows as any[]
+      // Handle both array and object with rows property
+      tables = Array.isArray(result) ? result : (result.rows || []) as any[]
 
       // Check for missing critical tables and create them
-      const existingTables = tables.map((t: any) => t.table_name)
+      const existingTables = (tables || []).map((t: any) => t.table_name)
       const requiredTables = ['tenants', 'users', 'sessions', 'accounts', 'verification_tokens', 'campaigns', 'respondents', 'responses', 'questions']
 
       for (const table of requiredTables) {
@@ -280,7 +281,7 @@ All responses are JSON with consistent error format:
         WHERE table_schema = 'public'
         ORDER BY table_name
       `)
-      tables = refreshResult.rows as any[]
+      tables = Array.isArray(refreshResult) ? refreshResult : (refreshResult.rows || []) as any[]
     } catch (e) {
       tablesError = e instanceof Error ? e.message : 'Unknown error'
     }

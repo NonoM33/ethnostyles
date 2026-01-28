@@ -25,7 +25,7 @@ ENV API_PORT=3000
 
 EXPOSE 3000
 
-WORKDIR /app/packages/db
+WORKDIR /app/apps/api
 
-# Run database migrations/push before starting
-CMD cd /app/packages/db && bunx drizzle-kit push --force && cd /app/apps/api && bun run src/index.ts
+# Run database migrations/push before starting (with || true to not fail on warnings)
+CMD sh -c "cd /app/packages/db && bunx drizzle-kit push || true && cd /app/apps/api && bun run src/index.ts"

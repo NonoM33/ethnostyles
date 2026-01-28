@@ -103,11 +103,33 @@ export function CampaignsPage() {
     }
   }
 
-  const copyLink = (slug: string) => {
+  const copyLink = async (slug: string) => {
     const url = `${window.location.origin}/q/${slug}`
-    navigator.clipboard.writeText(url)
-    setCopiedSlug(slug)
-    setTimeout(() => setCopiedSlug(null), 2000)
+
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        // Fallback for HTTP (non-secure context)
+        const textArea = document.createElement('textarea')
+        textArea.value = url
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        document.execCommand('copy')
+        textArea.remove()
+      }
+      setCopiedSlug(slug)
+      setTimeout(() => setCopiedSlug(null), 2000)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      // Show the URL in a prompt as last resort
+      window.prompt('Copiez ce lien:', url)
+    }
   }
 
   const handleDuplicate = async (id: string) => {
@@ -346,7 +368,7 @@ export function CampaignsPage() {
                           <span>Lien non disponible</span>
                         </div>
                         <button
-                          onClick={() => handleActivate(campaign.id)}
+                          onClick={(e) => { e.stopPropagation(); handleActivate(campaign.id) }}
                           disabled={activateCampaign.isPending}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm"
                         >
@@ -387,7 +409,7 @@ export function CampaignsPage() {
                     {campaign.status === 'active' && (
                       <div className="flex items-center justify-between">
                         <button
-                          onClick={() => copyLink(campaign.slug)}
+                          onClick={(e) => { e.stopPropagation(); copyLink(campaign.slug) }}
                           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                             copiedSlug === campaign.slug
                               ? 'bg-green-100 text-green-700'
@@ -490,7 +512,7 @@ export function CampaignsPage() {
                               Lien masqué
                             </span>
                             <button
-                              onClick={() => handleActivate(campaign.id)}
+                              onClick={(e) => { e.stopPropagation(); handleActivate(campaign.id) }}
                               disabled={activateCampaign.isPending}
                               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm"
                             >
@@ -523,7 +545,7 @@ export function CampaignsPage() {
                         {/* Campagne active : bouton de partage proéminent */}
                         {campaign.status === 'active' && (
                           <button
-                            onClick={() => copyLink(campaign.slug)}
+                            onClick={(e) => { e.stopPropagation(); copyLink(campaign.slug) }}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                               copiedSlug === campaign.slug
                                 ? 'bg-green-100 text-green-700 ring-2 ring-green-200'

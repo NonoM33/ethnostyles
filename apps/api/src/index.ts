@@ -274,6 +274,13 @@ All responses are JSON with consistent error format:
         }
       }
 
+      // Add missing columns to existing tables
+      try {
+        await db.execute(sql`ALTER TABLE "sessions" ADD COLUMN IF NOT EXISTS "ip_address" varchar(45)`)
+        await db.execute(sql`ALTER TABLE "sessions" ADD COLUMN IF NOT EXISTS "user_agent" text`)
+        await db.execute(sql`ALTER TABLE "sessions" ADD COLUMN IF NOT EXISTS "updated_at" timestamp DEFAULT now()`)
+      } catch { /* columns may already exist */ }
+
       // Refresh table list
       const refreshResult = await db.execute(sql`
         SELECT table_name

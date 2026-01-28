@@ -27,5 +27,8 @@ EXPOSE 3000
 
 WORKDIR /app/apps/api
 
-# Run database migrations before starting
-CMD sh -c "cd /app/packages/db && bunx drizzle-kit migrate && cd /app/apps/api && bun run src/index.ts"
+# Copy migration runner script
+COPY apps/api/run-migrations.ts /app/apps/api/
+
+# Run migrations then start the API
+CMD sh -c "cd /app/apps/api && bun run run-migrations.ts && bun run src/index.ts"

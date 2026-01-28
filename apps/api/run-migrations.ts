@@ -66,6 +66,16 @@ async function runMigrations() {
     `
     console.log('Created responses table (if not exists)')
 
+    // Rename old column names if they exist (backwards compatibility)
+    try {
+      await sql`ALTER TABLE "responses" RENAME COLUMN "question_number" TO "question_id"`
+      console.log('Renamed question_number to question_id')
+    } catch { /* column may not exist or already renamed */ }
+    try {
+      await sql`ALTER TABLE "responses" RENAME COLUMN "answer" TO "answer_index"`
+      console.log('Renamed answer to answer_index')
+    } catch { /* column may not exist or already renamed */ }
+
     // Create questions table if not exists
     await sql`
       CREATE TABLE IF NOT EXISTS "questions" (

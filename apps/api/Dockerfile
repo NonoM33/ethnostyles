@@ -27,5 +27,5 @@ EXPOSE 3000
 
 WORKDIR /app/apps/api
 
-# Run database migrations/push before starting (with || true to not fail on warnings)
-CMD sh -c "cd /app/packages/db && bunx drizzle-kit push || true && cd /app/apps/api && bun run src/index.ts"
+# Run database migrations before starting
+CMD sh -c "cd /app/packages/db && bunx drizzle-kit migrate && cd /app/apps/api && bun run src/index.ts"

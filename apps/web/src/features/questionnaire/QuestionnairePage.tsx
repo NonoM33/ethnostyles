@@ -3,8 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Question {
-  number: number
+  id: number
+  number?: number
   text: string
+  type: 'binary' | 'choice'
+  options: string[]
+  round?: number
 }
 
 interface Progress {
@@ -13,11 +17,12 @@ interface Progress {
   percentage: number
 }
 
-const ANSWER_OPTIONS = [
-  { value: 1, label: 'Pas du tout d\'accord' },
-  { value: 2, label: 'Plutôt pas d\'accord' },
-  { value: 3, label: 'Plutôt d\'accord' },
-  { value: 4, label: 'Tout à fait d\'accord' },
+// Default options fallback (Likert scale)
+const DEFAULT_OPTIONS = [
+  'Pas du tout d\'accord',
+  'Plutôt pas d\'accord',
+  'Plutôt d\'accord',
+  'Tout à fait d\'accord',
 ]
 
 export function QuestionnairePage() {
@@ -93,8 +98,8 @@ export function QuestionnairePage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            questionNumber: question.number,
-            answer,
+            questionNumber: progress?.current || question.id,
+            answerIndex: answer - 1, // Convert 1-4 to 0-3
           }),
         }
       )
@@ -108,13 +113,10 @@ export function QuestionnairePage() {
             navigate(`/q/${slug}/results/${respondentId}`)
           }, 500)
         } else {
-          // Show next question with animation
+          // Fetch next question
           setSelectedAnswer(null)
           setProgress(data.progress)
-          setQuestion({
-            number: data.nextQuestion,
-            text: `Question ${data.nextQuestion}: Êtes-vous d'accord avec l'affirmation suivante concernant vos valeurs et préférences?`,
-          })
+          await fetchQuestion()
         }
       } else {
         setError(data.message || 'Erreur')
@@ -211,7 +213,7 @@ export function QuestionnairePage() {
         <div className="max-w-2xl w-full">
           <AnimatePresence mode="wait">
             <motion.div
-              key={question?.number}
+              key={question?.id}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
@@ -224,7 +226,7 @@ export function QuestionnairePage() {
                   className="inline-block px-3 py-1 rounded-full text-sm font-medium mb-4"
                   style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                 >
-                  Question {question?.number}
+                  Question {progress?.current}
                 </span>
                 <h2 className="text-xl md:text-2xl font-medium text-gray-900 leading-relaxed">
                   {question?.text}
@@ -233,34 +235,34 @@ export function QuestionnairePage() {
 
               {/* Answer Options */}
               <div className="space-y-3">
-                {ANSWER_OPTIONS.map((option) => (
+                {(question?.options || DEFAULT_OPTIONS).map((option, index) => (
                   <motion.button
-                    key={option.value}
-                    onClick={() => handleSubmitAnswer(option.value)}
+                    key={index}
+                    onClick={() => handleSubmitAnswer(index + 1)}
                     disabled={isSubmitting}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                     className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                      selectedAnswer === option.value
+                      selectedAnswer === index + 1
                         ? 'border-transparent text-white'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                     }`}
                     style={{
-                      backgroundColor: selectedAnswer === option.value ? primaryColor : undefined,
-                      borderColor: selectedAnswer === option.value ? primaryColor : undefined,
+                      backgroundColor: selectedAnswer === index + 1 ? primaryColor : undefined,
+                      borderColor: selectedAnswer === index + 1 ? primaryColor : undefined,
                     }}
                   >
                     <div className="flex items-center gap-4">
                       <span
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                          selectedAnswer === option.value
+                          selectedAnswer === index + 1
                             ? 'bg-white/20 text-white'
                             : 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        {option.value}
+                        {index + 1}
                       </span>
-                      <span className="font-medium">{option.label}</span>
+                      <span className="font-medium">{option}</span>
                     </div>
                   </motion.button>
                 ))}
@@ -270,13 +272,13 @@ export function QuestionnairePage() {
 
           {/* Keyboard hints */}
           <p className="text-center text-sm text-gray-400 mt-6 hidden md:block">
-            Appuyez sur 1, 2, 3 ou 4 pour répondre rapidement
+            Appuyez sur {question?.options?.length === 2 ? '1 ou 2' : '1, 2, 3 ou 4'} pour répondre rapidement
           </p>
         </div>
       </div>
 
       {/* Keyboard shortcuts */}
-      <KeyboardShortcuts onAnswer={handleSubmitAnswer} disabled={isSubmitting} />
+      <KeyboardShortcuts onAnswer={handleSubmitAnswer} disabled={isSubmitting} maxOptions={question?.options?.length || 4} />
     </div>
   )
 }
@@ -285,22 +287,24 @@ export function QuestionnairePage() {
 function KeyboardShortcuts({
   onAnswer,
   disabled,
+  maxOptions,
 }: {
   onAnswer: (answer: number) => void
   disabled: boolean
+  maxOptions: number
 }) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (disabled) return
       const key = parseInt(e.key)
-      if (key >= 1 && key <= 4) {
+      if (key >= 1 && key <= maxOptions) {
         onAnswer(key)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onAnswer, disabled])
+  }, [onAnswer, disabled, maxOptions])
 
   return null
 }

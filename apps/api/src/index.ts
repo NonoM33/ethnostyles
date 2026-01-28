@@ -100,7 +100,6 @@ All responses are JSON with consistent error format:
   })
   .post('/db/migrate', async () => {
     const fs = await import('fs')
-    const path = await import('path')
 
     // Check what's in the migrations folder
     const migrationsPath = '/app/packages/db/drizzle'
@@ -130,6 +129,8 @@ All responses are JSON with consistent error format:
     const { sql } = await import('drizzle-orm')
     let tables: any[] = []
     let tablesError: string | null = null
+    let createdTables: string[] = []
+
     try {
       const result = await db.execute(sql`
         SELECT table_name
@@ -138,6 +139,148 @@ All responses are JSON with consistent error format:
         ORDER BY table_name
       `)
       tables = result.rows as any[]
+
+      // Check for missing critical tables and create them
+      const existingTables = tables.map((t: any) => t.table_name)
+      const requiredTables = ['tenants', 'users', 'sessions', 'accounts', 'verification_tokens', 'campaigns', 'respondents', 'responses', 'questions']
+
+      for (const table of requiredTables) {
+        if (!existingTables.includes(table)) {
+          try {
+            // Create missing tables
+            if (table === 'sessions') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "sessions" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+                  "token" varchar(255) NOT NULL UNIQUE,
+                  "expires_at" timestamp NOT NULL,
+                  "ip_address" varchar(45),
+                  "user_agent" text,
+                  "created_at" timestamp DEFAULT now() NOT NULL,
+                  "updated_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('sessions')
+            }
+            if (table === 'accounts') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "accounts" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+                  "account_id" varchar(255) NOT NULL,
+                  "provider_id" varchar(50) NOT NULL,
+                  "access_token" text,
+                  "refresh_token" text,
+                  "access_token_expires_at" timestamp,
+                  "refresh_token_expires_at" timestamp,
+                  "scope" text,
+                  "id_token" text,
+                  "password" text,
+                  "created_at" timestamp DEFAULT now() NOT NULL,
+                  "updated_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('accounts')
+            }
+            if (table === 'verification_tokens') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "verification_tokens" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+                  "token" varchar(255) NOT NULL UNIQUE,
+                  "expires_at" timestamp NOT NULL,
+                  "created_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('verification_tokens')
+            }
+            if (table === 'campaigns') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "campaigns" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "tenant_id" uuid NOT NULL REFERENCES "tenants"("id") ON DELETE CASCADE,
+                  "name" varchar(255) NOT NULL,
+                  "description" text,
+                  "status" varchar(20) DEFAULT 'draft' NOT NULL,
+                  "slug" varchar(100) NOT NULL UNIQUE,
+                  "logo_url" varchar(500),
+                  "primary_color" varchar(7),
+                  "questionnaire_size" varchar(20) DEFAULT 'standard',
+                  "webhook_url" varchar(500),
+                  "webhook_secret" varchar(64),
+                  "created_at" timestamp DEFAULT now() NOT NULL,
+                  "updated_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('campaigns')
+            }
+            if (table === 'respondents') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "respondents" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "campaign_id" uuid NOT NULL REFERENCES "campaigns"("id") ON DELETE CASCADE,
+                  "email" varchar(255) NOT NULL,
+                  "status" varchar(20) DEFAULT 'in_progress' NOT NULL,
+                  "current_question" integer DEFAULT 1 NOT NULL,
+                  "total_questions" integer DEFAULT 30 NOT NULL,
+                  "consent_given" boolean DEFAULT false NOT NULL,
+                  "consent_at" timestamp,
+                  "passeport_code" varchar(14) UNIQUE,
+                  "primary_mythe" varchar(50),
+                  "secondary_mythe" varchar(50),
+                  "confidence_score" integer,
+                  "profile_data" text,
+                  "started_at" timestamp DEFAULT now() NOT NULL,
+                  "completed_at" timestamp,
+                  "created_at" timestamp DEFAULT now() NOT NULL,
+                  "updated_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('respondents')
+            }
+            if (table === 'responses') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "responses" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "respondent_id" uuid NOT NULL REFERENCES "respondents"("id") ON DELETE CASCADE,
+                  "question_id" integer NOT NULL,
+                  "answer_index" integer NOT NULL,
+                  "answered_at" timestamp DEFAULT now() NOT NULL
+                )
+              `)
+              createdTables.push('responses')
+            }
+            if (table === 'questions') {
+              await db.execute(sql`
+                CREATE TABLE IF NOT EXISTS "questions" (
+                  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+                  "number" integer NOT NULL UNIQUE,
+                  "text" text NOT NULL,
+                  "type" varchar(20) DEFAULT 'choice' NOT NULL,
+                  "round" integer,
+                  "options" jsonb NOT NULL,
+                  "category" varchar(50),
+                  "weight" integer DEFAULT 1,
+                  "is_active" boolean DEFAULT true NOT NULL
+                )
+              `)
+              createdTables.push('questions')
+            }
+          } catch (tableErr) {
+            // Ignore if table already exists
+          }
+        }
+      }
+
+      // Refresh table list
+      const refreshResult = await db.execute(sql`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `)
+      tables = refreshResult.rows as any[]
     } catch (e) {
       tablesError = e instanceof Error ? e.message : 'Unknown error'
     }
@@ -148,10 +291,11 @@ All responses are JSON with consistent error format:
       migrationError,
       migrationResult,
       tablesAfterMigration: tables,
+      createdTables,
       tablesError,
       nodeEnv: process.env['NODE_ENV'],
       databaseUrlExists: !!process.env['DATABASE_URL'],
-      cacheVersion: '2026-01-27-v3'
+      cacheVersion: '2026-01-28-v1'
     }
   })
   .use(authRoutes)
